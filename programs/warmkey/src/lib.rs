@@ -9,7 +9,7 @@ use std::mem::size_of;
 declare_id!("FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg");
 
 // program
-const VERSION: &str = "1.0.4";
+const VERSION: &str = "1.0.5";
 
 // space allocation
 const ACC_DISCRI_LEN: usize = 8;
