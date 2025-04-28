@@ -1,0 +1,18 @@
+# Ignore everything:
+*
+
+# Except for these
+!migrations/
+!migrations/**
+!programs/
+!programs/**
+!tests/
+!tests/**
+!scripts/
+!scripts/**
+!.gitignore
+!truffle-config.js
+!Anchor.toml
+!Cargo.toml
+!tsconfig.json
+!package.json
