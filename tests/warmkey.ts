@@ -63,7 +63,7 @@ describe("--- WARMKEY CORE ---", async () => {
 	
 	let mint;
 	
-	let wkBeneficiary: anchor.web3.Keypair = Keypair.fromSecretKey(new Uint8Array(Object.values({"0":202,"1":188,"2":248,"3":59,"4":41,"5":255,"6":75,"7":31,"8":226,"9":117,"10":36,"11":213,"12":92,"13":113,"14":144,"15":59,"16":184,"17":165,"18":166,"19":191,"20":142,"21":232,"22":212,"23":116,"24":96,"25":23,"26":23,"27":91,"28":182,"29":210,"30":197,"31":224,"32":143,"33":202,"34":134,"35":59,"36":120,"37":218,"38":128,"39":194,"40":77,"41":135,"42":204,"43":21,"44":210,"45":25,"46":105,"47":253,"48":252,"49":244,"50":155,"51":56,"52":233,"53":0,"54":232,"55":28,"56":136,"57":222,"58":102,"59":116,"60":69,"61":162,"62":163,"63":100})));
+	let wkBeneficiary = new PublicKey("5W9kUdZMPk5gR6XiRVyri2cps1kJRY3b8eb6b76qYiEX");
 	let wkBeneficiaryTokenAcc;
 	
 	
@@ -103,12 +103,12 @@ describe("--- WARMKEY CORE ---", async () => {
 			provider.connection,	
 			provider.wallet.payer,   // payer
 			mint,                    // the token mint
-			wkBeneficiary.publicKey // token owner
+			wkBeneficiary // token owner
 		);
 		console.log("provider token account (wk beneficiary):", wkBeneficiaryTokenAcc.address.toBase58());
 		
 		//===== process referral =====
-		if (wkBeneficiary.publicKey.toBase58() != referral.publicKey.toBase58()) {
+		if (wkBeneficiary.toBase58() != referral.publicKey.toBase58()) {
 			// create referral token account
 			refTokenAccount = await getOrCreateAssociatedTokenAccount(
 				provider.connection,	
@@ -147,7 +147,6 @@ describe("--- WARMKEY CORE ---", async () => {
 		);
 		console.log("merchant pda:", merchantData.toBase58());
 		
-		
 		//===== setup program =====
 		[programAcc, bump] = await PublicKey.findProgramAddress(
 			[Buffer.from('programstate'), provider.wallet.payer.publicKey.toBuffer()],
@@ -155,7 +154,7 @@ describe("--- WARMKEY CORE ---", async () => {
 		);
 		console.log("program stater:", programAcc.toBase58());
 		var tx = await program.methods
-			.initProgram( wkBeneficiary.publicKey )
+			.initProgram( wkBeneficiary )
 			.accounts({
 				programState: programAcc,
 				signer: provider.wallet.payer.publicKey,
@@ -350,7 +349,7 @@ describe("--- WARMKEY CORE ---", async () => {
 		
 		var afterRef = await getAccount(provider.connection, refTokenAccount.address);
 		var refEarn = (Number(afterRef.amount) - Number(beforeRef.amount)) / LAMPORTS_PER_SOL;
-		if (getMerchantData.referral.toBase58() == wkBeneficiary.publicKey.toBase58()) {
+		if (getMerchantData.referral.toBase58() == wkBeneficiary.toBase58()) {
 			expect(refEarn).to.equal(0);
 		} else {
 			expect(refEarn).to.equal((mintAmount/LAMPORTS_PER_SOL) * 0.25 / 100);
@@ -358,7 +357,7 @@ describe("--- WARMKEY CORE ---", async () => {
 		
 		var afterWkBeneficiary = await getAccount(provider.connection, wkBeneficiaryTokenAcc.address);
 		var wkBeneficiaryEarn = (Number(afterWkBeneficiary.amount) - Number(beforeWkBeneficiary.amount)) / LAMPORTS_PER_SOL;
-		if (getMerchantData.referral.toBase58() == wkBeneficiary.publicKey.toBase58()) {
+		if (getMerchantData.referral.toBase58() == wkBeneficiary.toBase58()) {
 			expect(wkBeneficiaryEarn).to.equal((mintAmount/LAMPORTS_PER_SOL) * 0.5 / 100);
 		} else {
 			expect(wkBeneficiaryEarn).to.equal((mintAmount/LAMPORTS_PER_SOL) * 0.25 / 100);

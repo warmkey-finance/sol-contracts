@@ -9,7 +9,7 @@ use std::mem::size_of;
 declare_id!("FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg");
 
 // program
-const VERSION: &str = "1.0.0";
+const VERSION: &str = "1.0.4";
 
 // space allocation
 const ACC_DISCRI_LEN: usize = 8;
@@ -20,7 +20,7 @@ const FEES: u64 =  50; // 0.5%, /10000 to get multiply
 const SHARE_REVENUE: u64 = 5000; //50%
 const OWNER:Pubkey = pubkey!("EjC3ciptXau6mYyS1RcsyJpDshREhVKPdVAmawLLNsZU");
 const WK_SIGNER:Pubkey = pubkey!("EjC3ciptXau6mYyS1RcsyJpDshREhVKPdVAmawLLNsZU");
-const WK_BENEFICIARY:Pubkey = pubkey!("AgJR2qAYaLjUJJyCdDn2v1A8gXD3PHaiPdW4xcgCzhVu");
+const WK_BENEFICIARY:Pubkey = pubkey!("5W9kUdZMPk5gR6XiRVyri2cps1kJRY3b8eb6b76qYiEX");
 
 #[program]
 pub mod warmkey {
