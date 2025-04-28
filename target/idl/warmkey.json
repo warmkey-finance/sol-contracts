@@ -1,0 +1,1295 @@
+{
+  "address": "FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg",
+  "metadata": {
+    "name": "warmkey",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "check_tx_fees",
+      "discriminator": [
+        105,
+        246,
+        225,
+        233,
+        50,
+        199,
+        148,
+        61
+      ],
+      "accounts": [],
+      "args": []
+    },
+    {
+      "name": "create_ata",
+      "discriminator": [
+        26,
+        102,
+        168,
+        62,
+        117,
+        72,
+        168,
+        17
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_account",
+          "writable": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_token_acc",
+      "discriminator": [
+        25,
+        201,
+        25,
+        15,
+        35,
+        66,
+        12,
+        126
+      ],
+      "accounts": [
+        {
+          "name": "recipient",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "wallet_recipient"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "wallet_recipient"
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "dep_fundout",
+      "discriminator": [
+        7,
+        166,
+        123,
+        125,
+        31,
+        177,
+        195,
+        52
+      ],
+      "accounts": [
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "beneficiary_acc",
+          "writable": true
+        },
+        {
+          "name": "referral",
+          "writable": true
+        },
+        {
+          "name": "wk_beneficiary",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "beneficiary_idx",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "dep_supply_approval_gas",
+      "discriminator": [
+        228,
+        25,
+        126,
+        157,
+        92,
+        67,
+        84,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "batch_id",
+          "type": "u64"
+        },
+        {
+          "name": "amounts",
+          "type": {
+            "vec": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "get_sol_balances",
+      "discriminator": [
+        211,
+        171,
+        123,
+        52,
+        153,
+        116,
+        79,
+        228
+      ],
+      "accounts": [],
+      "args": [],
+      "returns": "string"
+    },
+    {
+      "name": "get_token_balances",
+      "discriminator": [
+        154,
+        210,
+        88,
+        23,
+        170,
+        198,
+        97,
+        221
+      ],
+      "accounts": [],
+      "args": [
+        {
+          "name": "allow_zero_amount",
+          "type": "bool"
+        }
+      ],
+      "returns": "string"
+    },
+    {
+      "name": "init_program",
+      "discriminator": [
+        56,
+        120,
+        211,
+        99,
+        196,
+        190,
+        129,
+        187
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "wk_beneficiary",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "register",
+      "discriminator": [
+        211,
+        124,
+        67,
+        15,
+        211,
+        194,
+        178,
+        240
+      ],
+      "accounts": [
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "referral",
+          "type": "pubkey"
+        },
+        {
+          "name": "beneficiaries",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_program",
+      "discriminator": [
+        3,
+        92,
+        74,
+        10,
+        160,
+        253,
+        41,
+        249
+      ],
+      "accounts": [
+        {
+          "name": "program_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  103,
+                  114,
+                  97,
+                  109,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "wk_beneficiary",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "discriminator": [
+        118,
+        65,
+        195,
+        198,
+        129,
+        216,
+        252,
+        192
+      ],
+      "accounts": [],
+      "args": [],
+      "returns": "string"
+    },
+    {
+      "name": "wd_enable",
+      "discriminator": [
+        188,
+        59,
+        230,
+        192,
+        163,
+        33,
+        55,
+        33
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "wk_signer",
+          "signer": true
+        },
+        {
+          "name": "wd_executor",
+          "signer": true
+        },
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wd_agent",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  100,
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "wd_executor"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "wd_payout",
+      "discriminator": [
+        43,
+        88,
+        16,
+        52,
+        3,
+        169,
+        186,
+        248
+      ],
+      "accounts": [
+        {
+          "name": "wd_agent",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  100,
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wd_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  100,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              },
+              {
+                "kind": "account",
+                "path": "funder.mint",
+                "account": "TokenAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "funder",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amounts",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "our_wd_ids",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "their_wd_ids",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "create_ata_idxs",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "wd_supply_executor_gas",
+      "discriminator": [
+        128,
+        254,
+        32,
+        190,
+        167,
+        58,
+        173,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wd_executor",
+          "writable": true
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "wd_supply_rolling",
+      "discriminator": [
+        160,
+        228,
+        184,
+        155,
+        86,
+        241,
+        201,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "merchant_token",
+          "writable": true
+        },
+        {
+          "name": "wd_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MerchantData",
+      "discriminator": [
+        56,
+        192,
+        70,
+        28,
+        212,
+        51,
+        231,
+        149
+      ]
+    },
+    {
+      "name": "ProgramState",
+      "discriminator": [
+        77,
+        209,
+        137,
+        229,
+        149,
+        67,
+        167,
+        230
+      ]
+    },
+    {
+      "name": "WdAgent",
+      "discriminator": [
+        145,
+        253,
+        127,
+        103,
+        37,
+        32,
+        202,
+        17
+      ]
+    },
+    {
+      "name": "WdData",
+      "discriminator": [
+        18,
+        60,
+        69,
+        87,
+        137,
+        177,
+        136,
+        168
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "DepFundoutEvent",
+      "discriminator": [
+        157,
+        127,
+        113,
+        58,
+        218,
+        194,
+        59,
+        245
+      ]
+    },
+    {
+      "name": "DepSupplyApprovalGasEvent",
+      "discriminator": [
+        165,
+        76,
+        199,
+        26,
+        218,
+        7,
+        25,
+        20
+      ]
+    },
+    {
+      "name": "RegisterEvent",
+      "discriminator": [
+        11,
+        129,
+        9,
+        89,
+        78,
+        136,
+        194,
+        135
+      ]
+    },
+    {
+      "name": "WdEnableEvent",
+      "discriminator": [
+        130,
+        25,
+        142,
+        40,
+        102,
+        147,
+        34,
+        226
+      ]
+    },
+    {
+      "name": "WdPayoutEvent",
+      "discriminator": [
+        195,
+        146,
+        155,
+        94,
+        205,
+        209,
+        61,
+        229
+      ]
+    },
+    {
+      "name": "WdSupplyExecutorGasEvent",
+      "discriminator": [
+        23,
+        120,
+        211,
+        29,
+        249,
+        96,
+        254,
+        146
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidBeneficiary",
+      "msg": "invalid beneficiary"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidMint",
+      "msg": "invalid mint"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidWkBeneficiary",
+      "msg": "invalid wk beneficiary"
+    },
+    {
+      "code": 6003,
+      "name": "OnlyOwner",
+      "msg": "invalid owner"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidRefAta",
+      "msg": "invalid referral ata"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidWkSigner",
+      "msg": "invalid wk signer"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidWdId",
+      "msg": "invalid wd id"
+    },
+    {
+      "code": 6007,
+      "name": "NoDepositAccount",
+      "msg": "no deposit account"
+    },
+    {
+      "code": 6008,
+      "name": "MismatchedRecipientAmounts",
+      "msg": "recipients mismatch with amounts"
+    },
+    {
+      "code": 6009,
+      "name": "OnlyMerchant",
+      "msg": "only merchant"
+    },
+    {
+      "code": 6010,
+      "name": "OnlyWdExecutor",
+      "msg": "only wd executor"
+    }
+  ],
+  "types": [
+    {
+      "name": "DepFundoutEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "fundout",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DepSupplyApprovalGasEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "supply_gas",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MerchantData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "referral",
+            "type": "pubkey"
+          },
+          {
+            "name": "wd_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "beneficiaries",
+            "type": {
+              "vec": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "wk_beneficiary",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegisterEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "referral",
+            "type": "pubkey"
+          },
+          {
+            "name": "beneficiaries",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "merchant_data",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WdAgent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WdData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "last_wd_id",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WdEnableEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "wd_executor",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WdPayoutEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "our_wd_ids",
+            "type": {
+              "vec": "u64"
+            }
+          },
+          {
+            "name": "their_wd_ids",
+            "type": {
+              "vec": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "WdSupplyExecutorGasEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "supply_gas",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
