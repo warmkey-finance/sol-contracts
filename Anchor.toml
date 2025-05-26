@@ -12,9 +12,10 @@ warmkey = "FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "Localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run --no-cache ts-mocha -p ./tsconfig.json -t 1000000 tests/**/warmkey.ts"
+test2 = "yarn run --no-cache ts-mocha -p ./tsconfig.json -t 1000000 tests/**/misc.ts"
 

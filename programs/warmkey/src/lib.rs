@@ -2,9 +2,9 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer, Mint};
 use anchor_spl::associated_token::{self,AssociatedToken, get_associated_token_address, Create};
 use anchor_lang::system_program;
-
-
 use std::mem::size_of;
+#[allow(unused_imports)]
+use solana_security_txt::security_txt;
 
 declare_id!("FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg");
 
@@ -21,6 +21,16 @@ const SHARE_REVENUE: u64 = 5000; //50%
 const OWNER:Pubkey = pubkey!("EjC3ciptXau6mYyS1RcsyJpDshREhVKPdVAmawLLNsZU");
 const WK_SIGNER:Pubkey = pubkey!("EjC3ciptXau6mYyS1RcsyJpDshREhVKPdVAmawLLNsZU");
 const WK_BENEFICIARY:Pubkey = pubkey!("5W9kUdZMPk5gR6XiRVyri2cps1kJRY3b8eb6b76qYiEX");
+
+#[cfg(not(feature = "no-entrypoint"))]
+security_txt! {
+    name: "warmkey",
+    project_url: "https://www.warmkey.finance",
+    contacts: "email:business@warmkey.finance, twitter:@warmkeyfinance",
+    policy: "https://github.com/warmkey-finance/sol-contracts/blob/master/SECURITY.md",
+    preferred_languages: "en",
+    source_code: "https://github.com/warmkey-finance/sol-contracts"
+}
 
 #[program]
 pub mod warmkey {
@@ -450,8 +460,6 @@ pub mod warmkey {
 
 	pub fn create_ata(ctx: Context<CreateAta>) -> Result<()> {
 		// this shud be cannot work! cos u cant sign here
-
-		
         let cpi_accounts = Create {
             payer: ctx.accounts.payer.to_account_info(),
             associated_token: ctx.accounts.token_account.to_account_info(),
