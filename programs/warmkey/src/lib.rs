@@ -6,7 +6,7 @@ use std::mem::size_of;
 #[allow(unused_imports)]
 use solana_security_txt::security_txt;
 
-declare_id!("FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg");
+declare_id!("D2jjy2oQJQnSZ2Tqf5QZtrdtvu7Z3onJpyJ2J7CzrkCe");
 
 // program
 const VERSION: &str = "1.0.5";
