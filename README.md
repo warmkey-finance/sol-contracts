@@ -2,8 +2,10 @@
 ## Deployed Programs
 | Cluster  | Address  | 
 |---|---|
-| Devnet  | FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg  |
-| Mainnet  |  FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg |
+| Devnet  | D2jjy2oQJQnSZ2Tqf5QZtrdtvu7Z3onJpyJ2J7CzrkCe  |
+| Mainnet  |  D2jjy2oQJQnSZ2Tqf5QZtrdtvu7Z3onJpyJ2J7CzrkCe |
+
+Old contract: FJeV4XT5gPHbDZEbLwGqoZUwdmn5Rzu91A1PstzggShg, inside has IDL display
 
 ## Other Addresses
 |   | Address  | 
