@@ -747,7 +747,7 @@
           }
         },
         {
-          "name": "our_wd_ids",
+          "name": "wd_ids",
           "type": {
             "vec": "u64"
           }
@@ -761,6 +761,96 @@
         {
           "name": "create_ata_idxs",
           "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "wd_payout_under_main",
+      "discriminator": [
+        135,
+        42,
+        157,
+        81,
+        4,
+        234,
+        248,
+        49
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "wd_agent",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  100,
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wd_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  100,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              },
+              {
+                "kind": "account",
+                "path": "funder.mint",
+                "account": "TokenAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "funder",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "from_wd_id",
+          "type": "u64"
+        },
+        {
+          "name": "to_wd_id",
+          "type": "u64"
         }
       ]
     },
@@ -1012,6 +1102,19 @@
       ]
     },
     {
+      "name": "WdPayoutUnderMainEvent",
+      "discriminator": [
+        227,
+        58,
+        224,
+        23,
+        234,
+        202,
+        34,
+        18
+      ]
+    },
+    {
       "name": "WdSupplyExecutorGasEvent",
       "discriminator": [
         23,
@@ -1080,6 +1183,16 @@
       "code": 6010,
       "name": "OnlyWdExecutor",
       "msg": "only wd executor"
+    },
+    {
+      "code": 6011,
+      "name": "MainFromBiggerThanTo",
+      "msg": "from must lower than to"
+    },
+    {
+      "code": 6012,
+      "name": "MainWdIdMustLowerThanLastWdId",
+      "msg": "cannot more than last wd id"
     }
   ],
   "types": [
@@ -1231,6 +1344,18 @@
           {
             "name": "last_wd_id",
             "type": "u64"
+          },
+          {
+            "name": "main_from_wd_id",
+            "type": "u64"
+          },
+          {
+            "name": "main_to_wd_id",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
@@ -1261,7 +1386,7 @@
             "type": "pubkey"
           },
           {
-            "name": "our_wd_ids",
+            "name": "wd_ids",
             "type": {
               "vec": "u64"
             }
@@ -1271,6 +1396,26 @@
             "type": {
               "vec": "u64"
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "WdPayoutUnderMainEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "from_wd_id",
+            "type": "u64"
+          },
+          {
+            "name": "to_wd_id",
+            "type": "u64"
           }
         ]
       }

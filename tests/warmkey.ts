@@ -126,7 +126,7 @@ describe("--- WARMKEY CORE ---", async () => {
 		
 		// fund sol to merchant wallet
 		await provider.connection.confirmTransaction(
-			await provider.connection.requestAirdrop(merchantWallet.publicKey, anchor.web3.LAMPORTS_PER_SOL * 1000)
+			await provider.connection.requestAirdrop(merchantWallet.publicKey, anchor.web3.LAMPORTS_PER_SOL * 2000)
 		);
 		
 		console.log("merchant wallet:", merchantWallet.publicKey.toBase58());
@@ -403,6 +403,8 @@ describe("--- WARMKEY CORE ---", async () => {
 		//console.log("wd executor pda:", thisAcc);
 		console.log('wd enable tx:', wdEnableTx);
 		
+
+		
 		// supply gas to wdWallet
 		var tx = await program.methods
 			.wdSupplyExecutorGas( new BN(anchor.web3.LAMPORTS_PER_SOL) )
@@ -440,21 +442,21 @@ describe("--- WARMKEY CORE ---", async () => {
 		console.log("set auth tx:", setAuthTx);
 		
 		//===== SUPPLY ROLLING =====
-		
+		const mintAmount = 100 * 10 ** 9;
 		// delegate max amount from merchantTokenAccount to merchantPda
 		var tx = new Transaction().add(
 			createApproveInstruction(
 				merchantTokenAccount.address,// token account
-				merchantData,                // authorizer
+				merchantData,                // new authorizer
 				merchantWallet.publicKey,    // owner
-				100 * 10 ** 9,        //delegated amount, change to max 18446744073709551615
+				mintAmount,        //delegated amount, change to max 18446744073709551615
 			),
 		);
 		const setApprovalTx = await provider.sendAndConfirm(tx, [merchantWallet]);
 		console.log("set approval tx:", setApprovalTx);
 		
 		// fund 100 tokens to merchantTokenAccount
-		const mintAmount = 100 * 10 ** 9;
+		
 		await mintTo(
 			provider.connection,
 			provider.wallet.payer,        // fee payer
@@ -465,8 +467,9 @@ describe("--- WARMKEY CORE ---", async () => {
 		);
 		
 		//var merchantTokenAcc = await getAccount(provider.connection, merchantTokenAccount.address);
-		//console.log("merchant token acc:", merchantTokenAcc);
+		//console.log("merchant TA balance:", merchantTokenAcc.amount, merchantTokenAcc.delegatedAmount, merchantData.toBase58(), merchantTokenAcc.delegate.toBase58());
 		
+		await sleep(5000);
 		// supply rolling
 		var tx = await program.methods
 			.wdSupplyRolling( new BN(mintAmount) )
@@ -482,6 +485,7 @@ describe("--- WARMKEY CORE ---", async () => {
 			
 		const wdSupplyRollingTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet], { commitment: "confirmed" });
 		console.log("supply rolling tx:", wdSupplyRollingTx);
+		return;
 		
 		//===== PAYOUT =====
 		

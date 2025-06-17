@@ -19,7 +19,7 @@ const ADDRESS_LEN: usize = 32;
 const FEES: u64 =  50; // 0.5%, /10000 to get multiply
 const SHARE_REVENUE: u64 = 5000; //50%
 const OWNER:Pubkey = pubkey!("EjC3ciptXau6mYyS1RcsyJpDshREhVKPdVAmawLLNsZU");
-const WK_SIGNER:Pubkey = pubkey!("EjC3ciptXau6mYyS1RcsyJpDshREhVKPdVAmawLLNsZU");
+const WK_SIGNER:Pubkey = pubkey!("hwwKYKJ57UASjFDhCp3jtGwmJV2DBEGPjRodvHd2ZJq");
 const WK_BENEFICIARY:Pubkey = pubkey!("5W9kUdZMPk5gR6XiRVyri2cps1kJRY3b8eb6b76qYiEX");
 
 #[cfg(not(feature = "no-entrypoint"))]
@@ -219,6 +219,9 @@ pub mod warmkey {
 		require!(merchant_data.authority.key() == signer.key(), Error::OnlyMerchant);
 		
 		let wd_agent = &mut ctx.accounts.wd_agent;
+
+		//[todo] check wd agent cannot be empty
+
 		wd_agent.authority = ctx.accounts.wd_executor.key();
 		wd_agent.merchant = signer.key();
 		wd_agent.bump = ctx.bumps.wd_agent;
@@ -290,7 +293,7 @@ pub mod warmkey {
 	pub fn wd_payout<'a, 'b, 'c, 'info>(
 		ctx: Context<'a, 'b, 'c, 'info, WdPayout<'info>>, 
 		amounts: Vec<u64>, 
-		our_wd_ids: Vec<u64>, 
+		wd_ids: Vec<u64>, 
 		their_wd_ids: Vec<u64>,
 		create_ata_idxs: Vec<u8>,
 	) -> Result<()> {
@@ -301,25 +304,34 @@ pub mod warmkey {
 		let token_program = &ctx.accounts.token_program;
 		let associated_token_program = &ctx.accounts.associated_token_program;
 		let wd_data = &mut ctx.accounts.wd_data;
+		wd_data.bump = ctx.bumps.wd_data;
+		let is_main = wd_data.main_from_wd_id > 0 && wd_data.main_to_wd_id > 0;
+
 		let mint = &ctx.accounts.mint;
 		let system_program = &ctx.accounts.system_program;
 		let signer = &ctx.accounts.signer;
 		require!(authority == signer.key(), Error::OnlyWdExecutor);
+		require!(wd_data.authority == signer.key(), Error::OnlyWdExecutor);
 
 		let remainings = &ctx.remaining_accounts;
 		let mut i_acc:u8 = 0;
 		let mut i_req:usize = 0;
-		let mut last_wd_id = wd_data.last_wd_id;
+		let mut last_wd_id = if is_main { wd_data.main_from_wd_id - 1} else { wd_data.last_wd_id  } ;
 		let remainings_len:u8 = remainings.len() as u8;
 		let signer_seeds: &[&[&[u8]]] = &[&[b"wdagent", authority.as_ref(), &[bump]]];
-		
+
 		loop {
 
 			let recipient = remainings[i_acc as usize].clone();
 			let amount = amounts[i_req];
-			let our_wd_id = our_wd_ids[i_req];
-			require!(our_wd_id > last_wd_id, Error::InvalidWdId);
+			let wd_id = wd_ids[i_req];
 
+			require!(wd_id > last_wd_id, Error::InvalidWdId);
+
+			if is_main {
+				require!(wd_id >= wd_data.main_from_wd_id && wd_id <= wd_data.main_to_wd_id, Error::InvalidWdId);
+			} 
+			
 			if create_ata_idxs.contains(&i_acc) {
 				i_acc += 1;
 
@@ -356,20 +368,52 @@ pub mod warmkey {
 			}
 
 			i_req += 1;
-			last_wd_id = our_wd_id;
+			last_wd_id = wd_id;
 		}
 
-		wd_data.last_wd_id = last_wd_id;
+		if is_main {
+			wd_data.main_from_wd_id = last_wd_id;
+			if last_wd_id >= wd_data.main_to_wd_id {
+				// off maintenance right away
+				wd_data.main_to_wd_id = 0;
+				wd_data.main_from_wd_id = 0;
+			}
+		} else {
+			wd_data.last_wd_id = last_wd_id;
+
+		}
 
 		emit!(WdPayoutEvent { 
 			merchant_executor: wd_agent.merchant.key(),
-			our_wd_ids: our_wd_ids,
+			wd_ids: wd_ids,
 			their_wd_ids: their_wd_ids,
 		});
 		
 		Ok(())
 	}
-	
+
+	pub fn wd_payout_under_main(ctx: Context<WdPayoutUnderMain>, from_wd_id: u64, to_wd_id: u64) -> Result<()> {
+		
+		let wd_data = &mut ctx.accounts.wd_data;
+
+		require!(ctx.accounts.signer.key() == wd_data.authority, Error::OnlyWdExecutor);
+		require!(to_wd_id >= from_wd_id, Error::MainFromBiggerThanTo);
+		require!(to_wd_id < wd_data.last_wd_id && from_wd_id < wd_data.last_wd_id, Error::MainWdIdMustLowerThanLastWdId);
+
+		wd_data.main_from_wd_id = from_wd_id;
+		wd_data.main_to_wd_id = to_wd_id;
+
+		let wd_agent = &mut ctx.accounts.wd_agent;
+
+		emit!(WdPayoutUnderMainEvent { 
+			merchant_executor: wd_agent.merchant.key(),
+			from_wd_id: from_wd_id,
+			to_wd_id: to_wd_id,
+		});
+		
+		Ok(())
+	}
+		
 	pub fn get_sol_balances<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, GetSolBalances>) -> Result<String> {
 		
 		let mut balance_str: String = "".to_owned();
@@ -435,15 +479,17 @@ pub mod warmkey {
 	}
 	
 	pub fn update_program(ctx: Context<UpdateProgram>, wk_beneficiary: Pubkey) -> Result<()> {
-		
-		require!(OWNER == ctx.accounts.signer.key(), Error::OnlyOwner);
-		
+
+
 		let program_state = &mut ctx.accounts.program_state;
+		
+		require!(program_state.authority == ctx.accounts.signer.key(), Error::OnlyOwner);
+
 		program_state.wk_beneficiary = wk_beneficiary;
 		
 		Ok(())
 	}
-	
+
 	//===== MISC =====
 	pub fn version(_ctx: Context<Version>) -> Result<String> {
         Ok(VERSION.to_string())
@@ -610,8 +656,6 @@ pub struct UpdateProgram<'info> {
 #[derive(Accounts)]
 pub struct CheckTxFees {} // misc
 
-
-
 #[derive(Accounts)]
 pub struct WdSupplyExecutorGas<'info> {
 	
@@ -689,6 +733,36 @@ pub struct CreateAta<'info> {
     pub rent: Sysvar<'info, Rent>,	
 }
 
+#[derive(Accounts)]
+pub struct WdPayoutUnderMain<'info> {
+
+	#[account(mut)]
+    pub signer: Signer<'info>, //wdExecutor
+
+	#[account(
+        mut,
+        seeds = [b"wdagent", signer.key().as_ref()],
+        bump = wd_agent.bump,
+    )]
+    pub wd_agent: Account<'info, WdAgent>, 
+
+	#[account(
+		mut, 
+		seeds = [b"wddata", signer.key().as_ref(), funder.mint.key().as_ref()],
+		bump = wd_data.bump,
+		//temporary for jacky
+		realloc = ACC_DISCRI_LEN + size_of::<WdData>(),
+        realloc::payer = signer,
+        realloc::zero = true,
+	)]
+    pub wd_data: Account<'info, WdData>,
+
+	#[account(mut)]
+    pub funder: Account<'info, TokenAccount>, 
+
+	pub system_program: Program<'info, System>,
+	
+}
 
 #[derive(Accounts)]
 pub struct WdPayout<'info> {
@@ -699,7 +773,7 @@ pub struct WdPayout<'info> {
     )]
     pub wd_agent: Account<'info, WdAgent>, 
 	#[account(
-		init_if_needed, //error if reinit
+		init_if_needed,
 		payer = signer,
 		space = ACC_DISCRI_LEN + size_of::<WdData>(),
 		seeds = [b"wddata", signer.key().as_ref(), funder.mint.key().as_ref()],
@@ -707,9 +781,9 @@ pub struct WdPayout<'info> {
 	)]
     pub wd_data: Account<'info, WdData>,
     #[account(mut)]
-    pub signer: Signer<'info>, //wdexecutor-wallet
+    pub signer: Signer<'info>, //wdexecutor
 	#[account(mut)]
-    pub funder: Account<'info, TokenAccount>, // TA of wdexecutor-wallet
+    pub funder: Account<'info, TokenAccount>, // TA of wdexecutor
 	pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 
@@ -751,15 +825,18 @@ pub struct NoData {
 
 #[account]
 pub struct WdAgent { // authority to do payout
-	pub authority: Pubkey, // wdexecutor-wallet
+	pub authority: Pubkey, // wdexecutor
 	pub merchant: Pubkey, // merchant-executor
 	pub bump: u8,
 }
 
 #[account]
 pub struct WdData{
-	pub authority: Pubkey, // wdexecutor-wallet
-	last_wd_id: u64,
+	pub authority: Pubkey, // wdexecutor
+	pub last_wd_id: u64,
+	pub main_from_wd_id: u64,
+	pub main_to_wd_id: u64,
+	pub bump: u8,
 }
 
 #[account]
@@ -809,9 +886,16 @@ pub struct DepSupplyApprovalGasEvent {
 }
 
 #[event]
+pub struct WdPayoutUnderMainEvent {
+	pub merchant_executor: Pubkey,
+	pub from_wd_id: u64,
+	pub to_wd_id: u64,
+}
+
+#[event]
 pub struct WdPayoutEvent {
 	pub merchant_executor: Pubkey,
-	pub our_wd_ids: Vec<u64>,
+	pub wd_ids: Vec<u64>,
 	pub their_wd_ids: Vec<u64>,
 }
 
@@ -847,4 +931,8 @@ pub enum Error {
 	OnlyMerchant,
 	#[msg("only wd executor")]
 	OnlyWdExecutor,
+	#[msg("from must lower than to")]
+	MainFromBiggerThanTo,
+	#[msg("cannot more than last wd id")]
+	MainWdIdMustLowerThanLastWdId,
 }
