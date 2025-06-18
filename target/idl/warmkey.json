@@ -1,5 +1,5 @@
 {
-  "address": "D2jjy2oQJQnSZ2Tqf5QZtrdtvu7Z3onJpyJ2J7CzrkCe",
+  "address": "warmPv4soGeXuRHdiUj6hiFRhaxFsP2h1B2aF6Gd3KF",
   "metadata": {
     "name": "warmkey",
     "version": "0.1.0",
@@ -48,8 +48,7 @@
           "name": "mint"
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "token_program"
         },
         {
           "name": "system_program",
@@ -189,8 +188,7 @@
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "token_program"
         },
         {
           "name": "rent",
@@ -255,8 +253,7 @@
           "writable": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "token_program"
         },
         {
           "name": "system_program",
@@ -586,8 +583,7 @@
           "signer": true
         },
         {
-          "name": "wd_executor",
-          "signer": true
+          "name": "wd_executor"
         },
         {
           "name": "merchant_data",
@@ -704,8 +700,7 @@
               },
               {
                 "kind": "account",
-                "path": "funder.mint",
-                "account": "TokenAccount"
+                "path": "funder.mint"
               }
             ]
           }
@@ -720,8 +715,7 @@
           "writable": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "token_program"
         },
         {
           "name": "system_program",
@@ -828,8 +822,7 @@
               },
               {
                 "kind": "account",
-                "path": "funder.mint",
-                "account": "TokenAccount"
+                "path": "funder.mint"
               }
             ]
           }
@@ -965,8 +958,7 @@
           "writable": true
         },
         {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          "name": "token_program"
         },
         {
           "name": "system_program",

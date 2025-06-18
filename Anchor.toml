@@ -7,7 +7,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-warmkey = "D2jjy2oQJQnSZ2Tqf5QZtrdtvu7Z3onJpyJ2J7CzrkCe"
+warmkey = "warmPv4soGeXuRHdiUj6hiFRhaxFsP2h1B2aF6Gd3KF"
 
 [registry]
 url = "https://api.apr.dev"

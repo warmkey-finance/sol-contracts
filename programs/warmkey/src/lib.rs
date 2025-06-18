@@ -1,15 +1,15 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer, Mint};
+use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, Transfer};
 use anchor_spl::associated_token::{self,AssociatedToken, get_associated_token_address, Create};
 use anchor_lang::system_program;
 use std::mem::size_of;
 #[allow(unused_imports)]
 use solana_security_txt::security_txt;
 
-declare_id!("D2jjy2oQJQnSZ2Tqf5QZtrdtvu7Z3onJpyJ2J7CzrkCe");
+declare_id!("warmPv4soGeXuRHdiUj6hiFRhaxFsP2h1B2aF6Gd3KF");
 
 // program
-const VERSION: &str = "1.0.5";
+const VERSION: &str = "2.0.0";
 
 // space allocation
 const ACC_DISCRI_LEN: usize = 8;
@@ -167,7 +167,7 @@ pub mod warmkey {
 					};
 					
 					cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
-					let res = token::transfer(cpi_ctx, to_ref_amt); 
+					let res = token_interface::transfer(cpi_ctx, to_ref_amt); 
 					if res.is_ok() {
 						to_wk_amt -= to_ref_amt; 
 					} else {
@@ -186,7 +186,7 @@ pub mod warmkey {
 			};
 			
 			cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
-			token::transfer(cpi_ctx, to_wk_amt)?;	
+			token_interface::transfer(cpi_ctx, to_wk_amt)?;	
 			
 			// transfer to merchant
 			cpi_accounts = Transfer {
@@ -196,7 +196,7 @@ pub mod warmkey {
 			};
 			
 			cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
-			token::transfer(cpi_ctx, to_merchant_amt)?;
+			token_interface::transfer(cpi_ctx, to_merchant_amt)?;
 		}
 		
 		//===== emit =====
@@ -284,7 +284,7 @@ pub mod warmkey {
 		};
 		
         let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
-		token::transfer(cpi_ctx, amount)?;
+		token_interface::transfer(cpi_ctx, amount)?;
 		
 		Ok(())
 	}
@@ -303,15 +303,15 @@ pub mod warmkey {
 		let bump = wd_agent.bump;
 		let token_program = &ctx.accounts.token_program;
 		let associated_token_program = &ctx.accounts.associated_token_program;
-		let wd_data = &mut ctx.accounts.wd_data;
-		wd_data.bump = ctx.bumps.wd_data;
-		let is_main = wd_data.main_from_wd_id > 0 && wd_data.main_to_wd_id > 0;
-
 		let mint = &ctx.accounts.mint;
 		let system_program = &ctx.accounts.system_program;
 		let signer = &ctx.accounts.signer;
+		let wd_data = &mut ctx.accounts.wd_data;
+		wd_data.bump = ctx.bumps.wd_data;
+		wd_data.authority = authority;
+		let is_main = wd_data.main_from_wd_id > 0 && wd_data.main_to_wd_id > 0;
+
 		require!(authority == signer.key(), Error::OnlyWdExecutor);
-		require!(wd_data.authority == signer.key(), Error::OnlyWdExecutor);
 
 		let remainings = &ctx.remaining_accounts;
 		let mut i_acc:u8 = 0;
@@ -360,7 +360,7 @@ pub mod warmkey {
 			};
 			
 			let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
-			token::transfer(cpi_ctx, amount)?;
+			token_interface::transfer(cpi_ctx, amount)?;
 
 			i_acc += 1;
 			if i_acc >= remainings_len  {
@@ -557,21 +557,17 @@ pub struct DepFundout<'info> {
 	
 	#[account(mut)]
     pub signer: Signer<'info>,
-	/*
+
 	#[account(mut)] 
-	pub dep_token_acc: Account<'info, TokenAccount>,
-	*/
-	
-	#[account(mut)] 
-	pub beneficiary_acc: Account<'info, TokenAccount>,
+	pub beneficiary_acc: InterfaceAccount<'info, TokenAccount>,
 	
 	#[account(mut)]
-	pub referral: Account<'info, TokenAccount>,
+	pub referral: InterfaceAccount<'info, TokenAccount>,
 	
 	#[account(mut)]
-	pub wk_beneficiary: Account<'info, TokenAccount>,
+	pub wk_beneficiary: InterfaceAccount<'info, TokenAccount>,
 	
-	pub token_program: Program<'info, Token>,
+	pub token_program: Interface<'info, TokenInterface>,
 	 
 	pub system_program: Program<'info, System>,
 	
@@ -582,7 +578,8 @@ pub struct WdEnable<'info> {
 	#[account(mut)]
     pub signer: Signer<'info>,
 	pub wk_signer: Signer<'info>,
-	pub wd_executor: Signer<'info>,
+	///CHECK: tell jacky this!!
+	pub wd_executor: UncheckedAccount<'info>,
 	
 	#[account(
         mut, 
@@ -591,8 +588,16 @@ pub struct WdEnable<'info> {
     )]
     pub merchant_data: Account<'info, MerchantData>,
 	
+	
+	/*
 	#[account(
-        init, // create
+        mut, 
+        seeds = [b"wdagent", wd_executor.key().as_ref()],
+        bump = wd_agent.bump,
+    )]
+	*/
+	#[account(
+        init, 
         seeds = [b"wdagent", wd_executor.key().as_ref()],
         bump,
 		payer = signer,
@@ -690,12 +695,12 @@ pub struct WdSupplyRolling<'info> {
     pub signer: Signer<'info>, //merchant executor
 	
 	#[account(mut)]
-	pub merchant_token: Account<'info, TokenAccount>, 
+	pub merchant_token: InterfaceAccount<'info, TokenAccount>, 
 	
 	#[account(mut)]
-	pub wd_token: Account<'info, TokenAccount>, 
+	pub wd_token: InterfaceAccount<'info, TokenAccount>, 
 	
-	pub token_program: Program<'info, Token>,
+	pub token_program: Interface<'info, TokenInterface>,
 	
     pub system_program: Program<'info, System>,
 }
@@ -726,8 +731,8 @@ pub struct CreateAta<'info> {
     #[account(mut)]
     pub token_account: UncheckedAccount<'info>,
 
-    pub mint: Account<'info, Mint>,
-    pub token_program: Program<'info, Token>,
+    pub mint: InterfaceAccount<'info, Mint>,
+    pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,	
@@ -758,7 +763,7 @@ pub struct WdPayoutUnderMain<'info> {
     pub wd_data: Account<'info, WdData>,
 
 	#[account(mut)]
-    pub funder: Account<'info, TokenAccount>, 
+    pub funder: InterfaceAccount<'info, TokenAccount>, 
 
 	pub system_program: Program<'info, System>,
 	
@@ -783,11 +788,11 @@ pub struct WdPayout<'info> {
     #[account(mut)]
     pub signer: Signer<'info>, //wdexecutor
 	#[account(mut)]
-    pub funder: Account<'info, TokenAccount>, // TA of wdexecutor
-	pub token_program: Program<'info, Token>,
+    pub funder: InterfaceAccount<'info, TokenAccount>, // TA of wdexecutor
+	pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 
-	pub mint: Account<'info, Mint>,
+	pub mint: InterfaceAccount<'info, Mint>,
 	pub associated_token_program: Program<'info, AssociatedToken>,
 	pub rent: Sysvar<'info, Rent>,	
 }
@@ -801,7 +806,7 @@ pub struct CreateTokenAcc<'info> { // misc
         associated_token::mint = mint,
         associated_token::authority = wallet_recipient,
     )]
-    pub recipient: Account<'info, TokenAccount>, // The new associated token account
+    pub recipient: InterfaceAccount<'info, TokenAccount>, // The new associated token account
 	
 	///CHECK:
 	pub wallet_recipient: UncheckedAccount<'info>,
@@ -809,10 +814,10 @@ pub struct CreateTokenAcc<'info> { // misc
 	#[account(mut)]
 	pub signer: Signer<'info>,
 	
-	pub mint: Account<'info, Mint>,
+	pub mint: InterfaceAccount<'info, Mint>,
 	pub associated_token_program: Program<'info, AssociatedToken>,
 	pub system_program: Program<'info, System>,
-	pub token_program: Program<'info, Token>,
+	pub token_program: Interface<'info, TokenInterface>,
 	pub rent: Sysvar<'info, Rent>,	
 }
 

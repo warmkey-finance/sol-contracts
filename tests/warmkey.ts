@@ -3,8 +3,9 @@ import { BN, BorshCoder,Program, AnchorError, EventParser } from "@coral-xyz/anc
 import { Warmkey } from "../target/types/warmkey";
 import { Keypair, SystemProgram, PublicKey, Transaction, sendAndConfirmTransaction, LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY ,} from '@solana/web3.js';
 import { expect } from "chai";
-const {ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount, mintTo, getAccount, transfer, AuthorityType, createSetAuthorityInstruction, createAssociatedTokenAccountInstruction,createApproveInstruction, } = require("@solana/spl-token");
+const {ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, createMint, getAssociatedTokenAddress, getOrCreateAssociatedTokenAccount, mintTo, getAccount, transfer, AuthorityType, createSetAuthorityInstruction, createAssociatedTokenAccountInstruction,createApproveInstruction, } = require("@solana/spl-token");
 import { Emit } from "../target/types/emit";
+const fs = require('fs');
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const getTxSize = (tx: Transaction, feePayer: PublicKey): number => {
@@ -72,8 +73,22 @@ describe("--- WARMKEY CORE ---", async () => {
 	let refTokenAccount;
 	
 	let programAcc: PublicKey;
+
+	let wkSigner;
+
+	const testToken2022 = false;
+	let thisTokenProgramId;
+
 	
+
 	before(async () => {
+
+		thisTokenProgramId = testToken2022 ?  TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+
+
+		wkSigner  = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync("/home/ubuntu/.config/solana/hwwKYKJ57UASjFDhCp3jtGwmJV2DBEGPjRodvHd2ZJq.json", "utf-8"))));	
+
+		console.log("wkSigner", wkSigner.publicKey.toBase58());
 		
 		console.log("provider wallet:", provider.wallet.publicKey.toBase58());
 		/*
@@ -91,9 +106,13 @@ describe("--- WARMKEY CORE ---", async () => {
 			provider.wallet.payer,    // fee payer
 			provider.wallet.publicKey,// mint authority
 			provider.wallet.publicKey,// freeze authority
-			9                         // decimals
+			9,                         // decimals
+			anchor.web3.Keypair.generate(),
+			null,
+			thisTokenProgramId
 		);
 		console.log("new token mint:", mint.toBase58());
+		
 		
 		const block = await provider.connection.getLatestBlockhash();
 		console.log("blockhash:", block.blockhash, "height:", block.lastValidBlockHeight);
@@ -103,7 +122,11 @@ describe("--- WARMKEY CORE ---", async () => {
 			provider.connection,	
 			provider.wallet.payer,   // payer
 			mint,                    // the token mint
-			wkBeneficiary // token owner
+			wkBeneficiary, // token owner
+			false,
+			null, 
+			null,
+			thisTokenProgramId
 		);
 		console.log("provider token account (wk beneficiary):", wkBeneficiaryTokenAcc.address.toBase58());
 		
@@ -114,7 +137,11 @@ describe("--- WARMKEY CORE ---", async () => {
 				provider.connection,	
 				provider.wallet.payer,   // payer
 				mint,                    // the token mint
-				referral.publicKey // token owner
+				referral.publicKey, // token owner
+				false,
+				null, 
+				null,
+				thisTokenProgramId
 			);
 			console.log("referral token account:", refTokenAccount.address.toBase58());
 		} else {
@@ -136,7 +163,11 @@ describe("--- WARMKEY CORE ---", async () => {
 			provider.connection,	
 			provider.wallet.payer,   // payer
 			mint,                    // the token mint
-			merchantWallet.publicKey // token owner
+			merchantWallet.publicKey, // token owner
+			false,
+			null, 
+			null,
+			thisTokenProgramId
 		);
 		console.log("merchant token account:", merchantTokenAccount.address.toBase58());
 		
@@ -287,7 +318,7 @@ describe("--- WARMKEY CORE ---", async () => {
 				mintAmount
 			);
 			
-			var beforeDepTokenAcc = await getAccount(provider.connection, depositTokenAccount.address);
+			var beforeDepTokenAcc = await getAccount(provider.connection, depositTokenAccount.address, null, thisTokenProgramId);
 			
 			// change account owner to merchant pda
 			var tx = new Transaction().add(
@@ -297,20 +328,20 @@ describe("--- WARMKEY CORE ---", async () => {
 					AuthorityType.AccountOwner,  // authority type
 					merchantData,                 // new auth
 					[],
-					TOKEN_PROGRAM_ID,            // token program
+					thisTokenProgramId,            // token program
 				),
 			);
 			const setAuthTx = await provider.sendAndConfirm(tx, [depositWallet]);
 			console.log('set auth tx:', setAuthTx);
 		
-			var afterDepTokenAcc = await getAccount(provider.connection, depositTokenAccount.address);
+			var afterDepTokenAcc = await getAccount(provider.connection, depositTokenAccount.address, null, thisTokenProgramId);
 			expect(afterDepTokenAcc.owner.toBase58()).to.equal(merchantData.toBase58(), "token account's owner now must be merchant acc (PDA)");
 		}
 		
 		// fundout
 		var getMerchantData = await program.account.merchantData.fetch(merchantData);
-		var beforeWkBeneficiary = await getAccount(provider.connection, wkBeneficiaryTokenAcc.address);
-		var beforeRef = await getAccount(provider.connection, refTokenAccount.address);
+		var beforeWkBeneficiary = await getAccount(provider.connection, wkBeneficiaryTokenAcc.address, null, thisTokenProgramId);
+		var beforeRef = await getAccount(provider.connection, refTokenAccount.address, null, thisTokenProgramId);
 		
 		var accountMetas = [];
 		for(var x in depositTokenAccounts) {
@@ -329,7 +360,7 @@ describe("--- WARMKEY CORE ---", async () => {
 				referral: refTokenAccount.address,
 				beneficiaryAcc: merchantTokenAccount.address,
 				wkBeneficiary: wkBeneficiaryTokenAcc.address,
-				tokenProgram: TOKEN_PROGRAM_ID, 
+				tokenProgram: thisTokenProgramId, 
 				systemProgram: SystemProgram.programId,
 			})
 			.transaction();
@@ -344,10 +375,10 @@ describe("--- WARMKEY CORE ---", async () => {
 		console.log(fundoutTxDetails);
 		
 		/*
-		var afterDepTokenAcc = await getAccount(provider.connection, depositTokenAccount.address);
+		var afterDepTokenAcc = await getAccount(provider.connection, depositTokenAccount.address, null, thisTokenProgramId);
 		expect(Number(afterDepTokenAcc.amount)).to.equal(0);
 		
-		var afterRef = await getAccount(provider.connection, refTokenAccount.address);
+		var afterRef = await getAccount(provider.connection, refTokenAccount.address, null, thisTokenProgramId);
 		var refEarn = (Number(afterRef.amount) - Number(beforeRef.amount)) / LAMPORTS_PER_SOL;
 		if (getMerchantData.referral.toBase58() == wkBeneficiary.toBase58()) {
 			expect(refEarn).to.equal(0);
@@ -355,7 +386,7 @@ describe("--- WARMKEY CORE ---", async () => {
 			expect(refEarn).to.equal((mintAmount/LAMPORTS_PER_SOL) * 0.25 / 100);
 		}
 		
-		var afterWkBeneficiary = await getAccount(provider.connection, wkBeneficiaryTokenAcc.address);
+		var afterWkBeneficiary = await getAccount(provider.connection, wkBeneficiaryTokenAcc.address, null, thisTokenProgramId);
 		var wkBeneficiaryEarn = (Number(afterWkBeneficiary.amount) - Number(beforeWkBeneficiary.amount)) / LAMPORTS_PER_SOL;
 		if (getMerchantData.referral.toBase58() == wkBeneficiary.toBase58()) {
 			expect(wkBeneficiaryEarn).to.equal((mintAmount/LAMPORTS_PER_SOL) * 0.5 / 100);
@@ -390,7 +421,7 @@ describe("--- WARMKEY CORE ---", async () => {
 			.wdEnable()
 			.accounts({
 				signer: merchantWallet.publicKey,
-				wkSigner: provider.wallet.publicKey,
+				wkSigner: wkSigner.publicKey,
 				wdExecutor: wdWallet.publicKey,
 				merchantData: merchantData,
 				wdAgent: wdAgent,
@@ -398,7 +429,7 @@ describe("--- WARMKEY CORE ---", async () => {
 			})
 			.transaction();
 			
-		const wdEnableTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet, provider.wallet.payer, wdWallet], { commitment: "confirmed" });
+		const wdEnableTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet, wkSigner], { commitment: "confirmed" });
 		//var thisAcc = await provider.connection.getAccountInfo(wdAgent);
 		//console.log("wd executor pda:", thisAcc);
 		console.log('wd enable tx:', wdEnableTx);
@@ -425,21 +456,51 @@ describe("--- WARMKEY CORE ---", async () => {
 			provider.wallet.payer, // payer
 			mint,                  // the token mint
 			wdWallet.publicKey,     // token owner,
+			false,
+			null, 
+			null,
+			thisTokenProgramId
 		);
 		
-		// change account owner to wd agent
-		var tx = new Transaction().add(
-			createSetAuthorityInstruction(
+		// prohibited by 2022
+			// change account owner to wd agent
+		if (testToken2022) {
+			// delegate max amount from wdTokenAccount to wdAgent
+			var tx = new Transaction().add(
+				createApproveInstruction(
+					wdTokenAccount.address,// token account
+					wdAgent,                // new authorizer
+					wdWallet.publicKey,    // owner
+					new BN("18446744073709551615"),        //delegated amount, change to max 18446744073709551615
+					[wdWallet.publicKey],
+					thisTokenProgramId
+				),
+			);
+
+			var setApprovalTx = await provider.sendAndConfirm(tx, [wdWallet]);
+			console.log("set approval tx:", setApprovalTx);
+		} else {
+			var tx = new Transaction().add(
+				createSetAuthorityInstruction(
 				wdTokenAccount.address, // token account
 				wdWallet.publicKey,     // current auth
 				AuthorityType.AccountOwner,  // authority type
 				wdAgent,                 // new auth
 				[],
-				TOKEN_PROGRAM_ID,            // token program
-			),
-		);
-		const setAuthTx = await provider.sendAndConfirm(tx, [wdWallet]);
-		console.log("set auth tx:", setAuthTx);
+				thisTokenProgramId,            // token program
+				),
+			);
+
+			const setAuthTx = await provider.sendAndConfirm(tx, [wdWallet]);
+			console.log("set auth tx:", setAuthTx);
+		}
+		
+		
+		
+		//var wdTokenAcc = await getAccount(provider.connection, wdTokenAccount.address,null, thisTokenProgramId);
+		//console.log("wd TA balance:", wdTokenAcc.amount, wdTokenAcc.delegatedAmount, wdTokenAcc.delegate.toBase58());
+		//return;
+
 		
 		//===== SUPPLY ROLLING =====
 		const mintAmount = 100 * 10 ** 9;
@@ -450,9 +511,11 @@ describe("--- WARMKEY CORE ---", async () => {
 				merchantData,                // new authorizer
 				merchantWallet.publicKey,    // owner
 				mintAmount,        //delegated amount, change to max 18446744073709551615
+				[merchantWallet.publicKey],
+				thisTokenProgramId
 			),
 		);
-		const setApprovalTx = await provider.sendAndConfirm(tx, [merchantWallet]);
+		var setApprovalTx = await provider.sendAndConfirm(tx, [merchantWallet]);
 		console.log("set approval tx:", setApprovalTx);
 		
 		// fund 100 tokens to merchantTokenAccount
@@ -463,13 +526,17 @@ describe("--- WARMKEY CORE ---", async () => {
 			mint,
 			merchantTokenAccount.address, //to
 			provider.wallet,              // mint authority
-			mintAmount
+			mintAmount,
+			[provider.wallet],
+			null,
+			thisTokenProgramId
 		);
+		console.log("mint to:", "ok")
 		
-		//var merchantTokenAcc = await getAccount(provider.connection, merchantTokenAccount.address);
+		//var merchantTokenAcc = await getAccount(provider.connection, merchantTokenAccount.address, null, thisTokenProgramId);
 		//console.log("merchant TA balance:", merchantTokenAcc.amount, merchantTokenAcc.delegatedAmount, merchantData.toBase58(), merchantTokenAcc.delegate.toBase58());
 		
-		await sleep(5000);
+		await sleep(2500);
 		// supply rolling
 		var tx = await program.methods
 			.wdSupplyRolling( new BN(mintAmount) )
@@ -478,14 +545,14 @@ describe("--- WARMKEY CORE ---", async () => {
 				signer: merchantWallet.publicKey,
 				merchantToken: merchantTokenAccount.address,
 				wdToken: wdTokenAccount.address,
-				tokenProgram: TOKEN_PROGRAM_ID,
+				tokenProgram: thisTokenProgramId,
 				systemProgram: SystemProgram.programId,
 			})
 			.transaction();
 			
 		const wdSupplyRollingTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet], { commitment: "confirmed" });
 		console.log("supply rolling tx:", wdSupplyRollingTx);
-		return;
+		//return;
 		
 		//===== PAYOUT =====
 		
@@ -512,26 +579,32 @@ describe("--- WARMKEY CORE ---", async () => {
 			var _our_id = request[3]; ourIds.push( _our_id );
 			var _their_id = request[4]; theirIds.push( _their_id );
 
-			//test with create ATA
-			var recipientTokenAcc = await getOrCreateAssociatedTokenAccount(provider.connection, provider.wallet.payer, _mint, _recipient.publicKey);
-			recipientTokenAcc = recipientTokenAcc.address;
-
-			//var recipientTokenAcc = await getAssociatedTokenAddress(_mint, _recipient.publicKey);
+			if (x % 2 == 0) {
+				//test has ATA
+				var recipientTokenAcc = await getOrCreateAssociatedTokenAccount(
+					provider.connection, 
+					provider.wallet.payer, 
+					_mint, 
+					_recipient.publicKey,
+					false,
+					null, 
+					null,
+					thisTokenProgramId
+				);
+				recipientTokenAcc = recipientTokenAcc.address;
+			} else { 
+				//test has no ATA
+				var recipientTokenAcc = await getAssociatedTokenAddress(
+					_mint, 
+					_recipient.publicKey,
+					false,
+					thisTokenProgramId
+				);
+			}
+			
 			var thisAcc = await provider.connection.getAccountInfo(recipientTokenAcc);
 			if (thisAcc === null) {
-				/*
-				tx.add(
-					createAssociatedTokenAccountInstruction(
-						wdWallet.publicKey,   // payer
-						recipientTokenAcc,    // ATA
-						_recipient.publicKey, // owner
-						mint,                 // mint
-						TOKEN_PROGRAM_ID,     // program id
-						ASSOCIATED_TOKEN_PROGRAM_ID
-					)
-				);
-				*/
-
+				
 				accountMetas.push({pubkey: recipientTokenAcc, isWritable: true, isSigner: false});
 				createAtaIdxs.push(new BN(accountMetas.length - 1));
 				accountMetas.push({pubkey: _recipient.publicKey, isWritable: false, isSigner: false});
@@ -541,6 +614,7 @@ describe("--- WARMKEY CORE ---", async () => {
 			}
 		}
 
+		await sleep(10000);
 		// Vec<u64} type need not to be process by Buffer.from, lol??
 		var payoutInstr = await program.methods
 				.wdPayout(amounts, ourIds, theirIds, Buffer.from(createAtaIdxs))
@@ -550,7 +624,7 @@ describe("--- WARMKEY CORE ---", async () => {
 					wdData: wdDataPda,
 					signer: wdWallet.publicKey,
 					funder: wdTokenAccount.address,
-					tokenProgram: TOKEN_PROGRAM_ID,
+					tokenProgram: thisTokenProgramId,
 					systemProgram: SystemProgram.programId,
 					mint: mint,
 					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -565,10 +639,11 @@ describe("--- WARMKEY CORE ---", async () => {
 			commitment: "confirmed",
 		});
 		
+		
 		console.log("");
 		console.log('payout tx:', payoutTx);
 		console.log("tx size:", getTxSize(tx, wdWallet.publicKey));
-		console.log(payoutTxDetails);
+		//console.log(payoutTxDetails);
 		
 		//check recipient receive amount
 		for(var x in requests) {
@@ -578,12 +653,33 @@ describe("--- WARMKEY CORE ---", async () => {
 			var _amount = request[2];
 			
 			
-			var recipientTokenAddr = await getAssociatedTokenAddress(_mint, _recipient.publicKey);
-			var recipientTokenAcc = await getAccount(provider.connection, recipientTokenAddr);
+			var recipientTokenAddr = await getAssociatedTokenAddress(
+				_mint, 
+				_recipient.publicKey,
+				false,
+				thisTokenProgramId
+			);
+			
+			var recipientTokenAcc = await getAccount(provider.connection, recipientTokenAddr, null, thisTokenProgramId);
 			
 			console.log(recipientTokenAcc.amount);
+			
 			
 		}
 	});
 	
 });
+
+
+/*
+				tx.add(
+					createAssociatedTokenAccountInstruction(
+						wdWallet.publicKey,   // payer
+						recipientTokenAcc,    // ATA
+						_recipient.publicKey, // owner
+						mint,                 // mint
+						thisTokenProgramId,     // program id
+						ASSOCIATED_TOKEN_PROGRAM_ID
+					)
+				);
+				*/
