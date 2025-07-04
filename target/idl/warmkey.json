@@ -8,196 +8,6 @@
   },
   "instructions": [
     {
-      "name": "check_tx_fees",
-      "discriminator": [
-        105,
-        246,
-        225,
-        233,
-        50,
-        199,
-        148,
-        61
-      ],
-      "accounts": [],
-      "args": []
-    },
-    {
-      "name": "create_ata",
-      "discriminator": [
-        26,
-        102,
-        168,
-        62,
-        117,
-        72,
-        168,
-        17
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_account",
-          "writable": true
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "create_token_acc",
-      "discriminator": [
-        25,
-        201,
-        25,
-        15,
-        35,
-        66,
-        12,
-        126
-      ],
-      "accounts": [
-        {
-          "name": "recipient",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "wallet_recipient"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "wallet_recipient"
-        },
-        {
-          "name": "signer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "dep_fundout",
       "discriminator": [
         7,
@@ -583,7 +393,10 @@
           "signer": true
         },
         {
-          "name": "wd_executor"
+          "name": "wd_executor",
+          "docs": [
+            "CHECK"
+          ]
         },
         {
           "name": "merchant_data",
@@ -1118,6 +931,19 @@
         254,
         146
       ]
+    },
+    {
+      "name": "WdSupplyRollingEvent",
+      "discriminator": [
+        80,
+        248,
+        218,
+        58,
+        39,
+        203,
+        221,
+        225
+      ]
     }
   ],
   "errors": [
@@ -1185,6 +1011,11 @@
       "code": 6012,
       "name": "MainWdIdMustLowerThanLastWdId",
       "msg": "cannot more than last wd id"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidOnCurvePubkey",
+      "msg": "invalid on-curve pubkey"
     }
   ],
   "types": [
@@ -1423,6 +1254,26 @@
           },
           {
             "name": "supply_gas",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WdSupplyRollingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant_token",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
             "type": "u64"
           }
         ]

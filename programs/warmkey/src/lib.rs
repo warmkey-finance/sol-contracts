@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, Transfer};
-use anchor_spl::associated_token::{self,AssociatedToken, get_associated_token_address, Create};
+use anchor_spl::associated_token::{self,AssociatedToken, get_associated_token_address_with_program_id, Create};
 use anchor_lang::system_program;
 use std::mem::size_of;
 #[allow(unused_imports)]
@@ -9,7 +9,7 @@ use solana_security_txt::security_txt;
 declare_id!("warmPv4soGeXuRHdiUj6hiFRhaxFsP2h1B2aF6Gd3KF");
 
 // program
-const VERSION: &str = "2.0.0";
+const VERSION: &str = "2.0.1";
 
 // space allocation
 const ACC_DISCRI_LEN: usize = 8;
@@ -37,7 +37,7 @@ pub mod warmkey {
     use super::*;
 	
 	//===== CORE =====
-    pub fn register(ctx: Context<Register>, referral/*wallet*/: Pubkey, beneficiaries: Vec<Pubkey>) -> Result<()> {
+    pub fn register(ctx: Context<Register>, referral: Pubkey, beneficiaries: Vec<Pubkey>) -> Result<()> {
 
 		let merchant_data = &mut ctx.accounts.merchant_data;
 		merchant_data.authority = ctx.accounts.signer.key();
@@ -107,6 +107,7 @@ pub mod warmkey {
 		require!(authority == signer.key(), Error::OnlyMerchant);
 		
         let token_program = &ctx.accounts.token_program;
+		let token_program_key = token_program.key();
 		let beneficiary = &ctx.accounts.beneficiary_acc;
 		let bump = merchant_data.bump;
 		let wk_beneficiary = &ctx.accounts.wk_beneficiary;
@@ -115,8 +116,9 @@ pub mod warmkey {
 		
 		let mut amounts:u128 = 0;
 		let mut checked:bool = false;
-		let mut has_valid_ref = referral.key() != wk_beneficiary.key();// wallet compare wallet
-		let mut mint:Pubkey =  pubkey!("1nc1nerator11111111111111111111111111111111");
+		let mut has_valid_ref = referral.key() != wk_beneficiary.key(); //token acc
+		let mut mint:Pubkey = pubkey!("1nc1nerator11111111111111111111111111111111");
+
 		for dep_token_acc in ctx.remaining_accounts {
 			
 			let mut cpi_accounts;
@@ -127,20 +129,19 @@ pub mod warmkey {
 			drop(_dep_token_data);
 			let mint_addr = dep_token_data.mint.key();
 			
-			
 			if !checked {
 				// check once only
 				mint = dep_token_data.mint.key();
 				require!(mint_addr == mint.key(), Error::InvalidMint);
-			
-				let wk_ata = get_associated_token_address(&WK_BENEFICIARY, &mint_addr);	
+				
+				let wk_ata = get_associated_token_address_with_program_id(&WK_BENEFICIARY, &mint_addr, &token_program_key);	
 				require!(wk_ata.key() == wk_beneficiary.key(), Error::InvalidWkBeneficiary);
 				
-				let beneficiary_ata = get_associated_token_address(&merchant_data.beneficiaries[beneficiary_idx as usize].key(), &mint_addr);	
+				let beneficiary_ata = get_associated_token_address_with_program_id(&merchant_data.beneficiaries[beneficiary_idx as usize].key(), &mint_addr,&token_program_key);	
 				require!(beneficiary_ata.key() == beneficiary.key(), Error::InvalidBeneficiary);
 				
 				// check referral ata
-				let ref_ata = get_associated_token_address(&merchant_data.referral.key(), &mint_addr);	
+				let ref_ata = get_associated_token_address_with_program_id(&merchant_data.referral.key(), &mint_addr, &token_program_key);	
 				
 				if ref_ata.key() != referral.key() {
 					has_valid_ref = false;
@@ -167,6 +168,7 @@ pub mod warmkey {
 					};
 					
 					cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
+					
 					let res = token_interface::transfer(cpi_ctx, to_ref_amt); 
 					if res.is_ok() {
 						to_wk_amt -= to_ref_amt; 
@@ -216,13 +218,12 @@ pub mod warmkey {
 		
 		let merchant_data = &mut ctx.accounts.merchant_data;
 		let signer = &ctx.accounts.signer;
+		let wd_executor = &ctx.accounts.wd_executor;
+
 		require!(merchant_data.authority.key() == signer.key(), Error::OnlyMerchant);
 		
 		let wd_agent = &mut ctx.accounts.wd_agent;
-
-		//[todo] check wd agent cannot be empty
-
-		wd_agent.authority = ctx.accounts.wd_executor.key();
+		wd_agent.authority = wd_executor.key();
 		wd_agent.merchant = signer.key();
 		wd_agent.bump = ctx.bumps.wd_agent;
 		
@@ -285,6 +286,12 @@ pub mod warmkey {
 		
         let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
 		token_interface::transfer(cpi_ctx, amount)?;
+
+		emit!(WdSupplyRollingEvent{
+			merchant_executor: signer.key(),
+			merchant_token: merchant_token.key(), // here can know what mint it is
+			amount: amount,
+		});
 		
 		Ok(())
 	}
@@ -495,38 +502,12 @@ pub mod warmkey {
         Ok(VERSION.to_string())
     }
 	
-	pub fn check_tx_fees(_ctx: Context<CheckTxFees>) -> Result<()> {
-        Ok(())
-    }
-	
-	pub fn create_token_acc(ctx: Context<CreateTokenAcc>) -> Result<()> {
-		msg!("ata created: {}", ctx.accounts.recipient.key());
-        Ok(())
-    }
-
-	pub fn create_ata(ctx: Context<CreateAta>) -> Result<()> {
-		// this shud be cannot work! cos u cant sign here
-        let cpi_accounts = Create {
-            payer: ctx.accounts.payer.to_account_info(),
-            associated_token: ctx.accounts.token_account.to_account_info(),
-            authority: ctx.accounts.payer.to_account_info(),
-            mint: ctx.accounts.mint.to_account_info(),
-            system_program: ctx.accounts.system_program.to_account_info(),
-            token_program: ctx.accounts.token_program.to_account_info(),
-			
-        };
-
-        let cpi_program = ctx.accounts.associated_token_program.to_account_info();
-
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        associated_token::create(cpi_ctx)?;
-		Ok(())
-    }
 }
 
 //===== derive accounts =====
 
 #[derive(Accounts)]
+#[instruction(referral: Pubkey, beneficiaries: Vec<Pubkey>)]
 pub struct Register<'info> {
 	
 	#[account(
@@ -534,14 +515,13 @@ pub struct Register<'info> {
         seeds = [b"merchant", signer.key().as_ref()],
         bump,
 		payer = signer,
-		space = ACC_DISCRI_LEN + size_of::<MerchantData>() + (1 * ADDRESS_LEN),
+		space = ACC_DISCRI_LEN + size_of::<MerchantData>() + (beneficiaries.len() * ADDRESS_LEN),
     )]
     pub merchant_data: Account<'info, MerchantData>,
 	
     #[account(mut)]
     pub signer: Signer<'info>,
 	
-	//need it, because init (create) new account
     pub system_program: Program<'info, System>,
 }
 
@@ -578,7 +558,7 @@ pub struct WdEnable<'info> {
 	#[account(mut)]
     pub signer: Signer<'info>,
 	pub wk_signer: Signer<'info>,
-	///CHECK: tell jacky this!!
+	///CHECK
 	pub wd_executor: UncheckedAccount<'info>,
 	
 	#[account(
@@ -591,7 +571,7 @@ pub struct WdEnable<'info> {
 	
 	/*
 	#[account(
-        mut, 
+        mut, 	
         seeds = [b"wdagent", wd_executor.key().as_ref()],
         bump = wd_agent.bump,
     )]
@@ -722,23 +702,6 @@ pub struct DepSupplyApprovalGas<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CreateAta<'info> {
-
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// CHECK: new token account
-    #[account(mut)]
-    pub token_account: UncheckedAccount<'info>,
-
-    pub mint: InterfaceAccount<'info, Mint>,
-    pub token_program: Interface<'info, TokenInterface>,
-    pub system_program: Program<'info, System>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub rent: Sysvar<'info, Rent>,	
-}
-
-#[derive(Accounts)]
 pub struct WdPayoutUnderMain<'info> {
 
 	#[account(mut)]
@@ -755,10 +718,11 @@ pub struct WdPayoutUnderMain<'info> {
 		mut, 
 		seeds = [b"wddata", signer.key().as_ref(), funder.mint.key().as_ref()],
 		bump = wd_data.bump,
-		//temporary for jacky
+		/*
 		realloc = ACC_DISCRI_LEN + size_of::<WdData>(),
         realloc::payer = signer,
         realloc::zero = true,
+		*/
 	)]
     pub wd_data: Account<'info, WdData>,
 
@@ -910,6 +874,12 @@ pub struct WdSupplyExecutorGasEvent {
 	pub supply_gas: u64,
 }
 
+#[event]
+pub struct WdSupplyRollingEvent {
+	pub merchant_executor: Pubkey,
+	pub merchant_token: Pubkey,
+	pub amount: u64,
+}
 
 //===== error =====
 #[error_code]
@@ -940,4 +910,6 @@ pub enum Error {
 	MainFromBiggerThanTo,
 	#[msg("cannot more than last wd id")]
 	MainWdIdMustLowerThanLastWdId,
+	#[msg("invalid on-curve pubkey")]
+	InvalidOnCurvePubkey
 }

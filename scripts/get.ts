@@ -23,11 +23,23 @@ const main = async () => {
     );
     console.log("program stater:", programAcc.toBase58());
 
-    let programStateAcc = await program.account.programState.fetch(programAcc);
-    console.log("wk beneficiary:", programStateAcc.wkBeneficiary.toBase58());
+    let programAccDetails = await program.account.programState.fetch(programAcc);
+    console.log("wk beneficiary:", programAccDetails.wkBeneficiary.toBase58());
 
     const version = await program.methods.version().view();
 	console.log("Program Version:", version);
+
+
+    var wdExecutor = new PublicKey("7JrQXBSTiJLvsyGShGfX2UWQ5KxmA96boAq1gqS1G9Zy");
+    var mint = new PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
+    [wdDataAcc, bump] = await PublicKey.findProgramAddress(
+        [Buffer.from('wddata'), wdExecutor.toBuffer(), mint.toBuffer()],
+        program.programId
+    );
+
+    console.log("wd data acc:", wdDataAcc.toBase58());
+    var wdDataAccDetails = await program.account.wdData.fetch(wdDataAcc);
+    console.log("wd data's last wd id:", wdDataAccDetails.lastWdId.toString());
     
                 
 };
