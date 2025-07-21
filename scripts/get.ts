@@ -31,15 +31,28 @@ const main = async () => {
 
 
     var wdExecutor = new PublicKey("7JrQXBSTiJLvsyGShGfX2UWQ5KxmA96boAq1gqS1G9Zy");
+
+    //usdt
     var mint = new PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
     [wdDataAcc, bump] = await PublicKey.findProgramAddress(
         [Buffer.from('wddata'), wdExecutor.toBuffer(), mint.toBuffer()],
         program.programId
     );
 
-    console.log("wd data acc:", wdDataAcc.toBase58());
+    console.log("(usdt) wd data acc:", wdDataAcc.toBase58());
     var wdDataAccDetails = await program.account.wdData.fetch(wdDataAcc);
-    console.log("wd data's last wd id:", wdDataAccDetails.lastWdId.toString());
+    console.log("(usdt) wd data's last wd id:", wdDataAccDetails.lastWdId.toString());
+
+    //ai
+    var mint = new PublicKey("HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC");
+    [wdDataAcc, bump] = await PublicKey.findProgramAddress(
+        [Buffer.from('wddata'), wdExecutor.toBuffer(), mint.toBuffer()],
+        program.programId
+    );
+
+    console.log("(ai) wd data acc:", wdDataAcc.toBase58());
+    var wdDataAccDetails = await program.account.wdData.fetch(wdDataAcc);
+    console.log("(ai) wd data's last wd id:", wdDataAccDetails.lastWdId.toString());
     
                 
 };

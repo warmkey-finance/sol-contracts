@@ -49,7 +49,7 @@ const getTxSize = (tx: Transaction, feePayer: PublicKey): number => {
 	);
 }
 
-describe("--- WARMKEY CORE ---", async () => {
+describe("----- WARMKEY CORE -----", async () => {
 	
 	// Configure the client to use the local cluster.
 	const provider = anchor.AnchorProvider.env();
@@ -194,7 +194,7 @@ describe("--- WARMKEY CORE ---", async () => {
 		
 	});
 	
-	it("register", async () => {
+	it("----- REGISTER -----", async () => {
 		
 		var beforeBalance = await provider.connection.getBalance(merchantWallet.publicKey);
 		var tx = await program.methods
@@ -248,7 +248,7 @@ describe("--- WARMKEY CORE ---", async () => {
 		
 	});
 	
-	it("fundout", async () => {
+	it("----- FUND OUT -----", async () => {
 		
 		let depositWallets = [anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()/*, anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()*/];
 		let depositTokenAccounts = [];
@@ -261,6 +261,8 @@ describe("--- WARMKEY CORE ---", async () => {
 			accountMetas.push({pubkey: depositWallet.publicKey, isWritable: true, isSigner: false});
 			amounts.push(new BN(anchor.web3.LAMPORTS_PER_SOL));
 		}
+
+		
 		// 2 persons: 64767 CU, 3 persons: 82675 CU, 4 persons: 106583 CU, 5 persons: 130491 CU
 		var tx = await program.methods
 			.depSupplyApprovalGas( new BN(123), amounts )
@@ -280,6 +282,12 @@ describe("--- WARMKEY CORE ---", async () => {
 			commitment: "confirmed",
 		});
 		//console.log(supplyGasTxDetails);
+
+		var balances = await program.methods.getSolBalances()
+		.remainingAccounts(accountMetas)
+		.view();
+		console.log("sol balances:", balances);
+
 
 		const mintAmount = 100 * 10 ** 9;
 		for(var x in depositWallets) {
@@ -350,8 +358,6 @@ describe("--- WARMKEY CORE ---", async () => {
 				var afterDepTokenAcc = await getAccount(provider.connection, depositTokenAccount.address, null, thisTokenProgramId);
 				expect(afterDepTokenAcc.owner.toBase58()).to.equal(merchantData.toBase58(), "token account's owner now must be merchant acc (PDA)");
 			}
-		
-			
 		}
 		
 		// fundout
@@ -364,6 +370,20 @@ describe("--- WARMKEY CORE ---", async () => {
 			var depositTokenAccount = depositTokenAccounts[x];
 			accountMetas.push({pubkey: depositTokenAccount.address, isWritable: true, isSigner: false});
 		}
+
+		// check token balances
+		var balances = await program.methods.getTokenBalances()
+		.remainingAccounts(accountMetas)
+		.view();
+		console.log("token balances:", balances);
+
+
+		// check delegated amount
+		var balances = await program.methods.getDelegatedAmounts()
+		.remainingAccounts(accountMetas)
+		.view();
+		console.log("delegated amounts:", balances);
+
 		//1 deposit account = 45354 CU, 2 deposit account = 61764
 		//1 deposit account = 23968 CU, 2 deposit account = 39094
 		await sleep(5000);
@@ -414,7 +434,7 @@ describe("--- WARMKEY CORE ---", async () => {
 		}
 	});
 	
-	it("withdrawal", async () => {
+	it("---- WITHDRAWAL -----", async () => {
 		//enable withdrawal
 		let wdWallet: anchor.web3.Keypair = anchor.web3.Keypair.generate();
 		let wdTokenAccount;
@@ -575,13 +595,25 @@ describe("--- WARMKEY CORE ---", async () => {
 		let recipient2: anchor.web3.Keypair = anchor.web3.Keypair.generate();
 		let recipient3: anchor.web3.Keypair = anchor.web3.Keypair.generate();
 		let recipient4: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+		let recipient5: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+		let recipient6: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+		let recipient7: anchor.web3.Keypair = anchor.web3.Keypair.generate();
+		let recipient8: anchor.web3.Keypair = anchor.web3.Keypair.generate();
 		
 		var requests = [
 			[ mint, recipient1, new BN(1), new BN(1), new BN(43) ],
 			[ mint, recipient2, new BN(2), new BN(2), new BN(44) ],
 			[ mint, recipient3, new BN(3), new BN(3), new BN(45) ],
-			[ mint, recipient4, new BN(4), new BN(4), new BN(46) ],
+			[ mint, recipient4, new BN(4), new BN(4), new BN(46) ],			
 		];
+
+		//about to test duplicate recipient
+		var requests2 = [
+			[ mint, recipient1, new BN(5), new BN(5), new BN(47) ],
+			[ mint, recipient2, new BN(6), new BN(6), new BN(48) ],
+			[ mint, recipient3, new BN(7), new BN(7), new BN(49) ],
+			[ mint, recipient4, new BN(8), new BN(8), new BN(50) ],
+		]
 
 		var tx = new Transaction();
 		var accountMetas = [];
@@ -634,6 +666,25 @@ describe("--- WARMKEY CORE ---", async () => {
 			}
 		}
 
+		for(var x in requests2) {
+			var request = requests2[x];
+			var _mint = request[0]; 
+			var _recipient = request[1];
+			var _amount = request[2]; amounts.push( _amount );
+			var _our_id = request[3]; ourIds.push( _our_id );
+			var _their_id = request[4]; theirIds.push( _their_id );
+
+			var recipientTokenAcc = await getAssociatedTokenAddress(
+				_mint, 
+				_recipient.publicKey,
+				false,
+				thisTokenProgramId
+			);
+
+			accountMetas.push({pubkey: recipientTokenAcc, isWritable: true, isSigner: false});
+			
+		}
+
 		await sleep(2500);
 		// Vec<u64} type need not to be process by Buffer.from, lol??
 		var payoutInstr = await program.methods
@@ -666,13 +717,20 @@ describe("--- WARMKEY CORE ---", async () => {
 		//console.log(payoutTxDetails);
 		
 		//check recipient receive amount
+
+		// add amount from requests2 to requests
+		for(var x in requests2) {
+			var request = requests2[x];
+			var _amount = request[2];
+			requests[x][2] =  requests[x][2].add(_amount) ;
+		}
+
 		for(var x in requests) {
 			var request = requests[x];
 			var _mint = request[0];
 			var _recipient = request[1];
 			var _amount = request[2];
-			
-			
+
 			var recipientTokenAddr = await getAssociatedTokenAddress(
 				_mint, 
 				_recipient.publicKey,
@@ -685,20 +743,9 @@ describe("--- WARMKEY CORE ---", async () => {
 			expect(Number(recipientTokenAcc.amount)).to.equal(Number(_amount));
 
 		}
+
+		var wdDataAccDetails = await program.account.wdData.fetch(wdDataPda);
+		console.log("wd data's last wd id:", wdDataAccDetails.lastWdId.toString());
 	});
-	
+
 });
-
-
-/*
-				tx.add(
-					createAssociatedTokenAccountInstruction(
-						wdWallet.publicKey,   // payer
-						recipientTokenAcc,    // ATA
-						_recipient.publicKey, // owner
-						mint,                 // mint
-						thisTokenProgramId,     // program id
-						ASSOCIATED_TOKEN_PROGRAM_ID
-					)
-				);
-				*/

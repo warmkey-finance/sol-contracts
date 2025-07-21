@@ -369,13 +369,15 @@ pub mod warmkey {
 			let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts).with_signer(signer_seeds);
 			token_interface::transfer(cpi_ctx, amount)?;
 
+			last_wd_id = wd_id;
+
 			i_acc += 1;
 			if i_acc >= remainings_len  {
 				break;
 			}
 
 			i_req += 1;
-			last_wd_id = wd_id;
+			
 		}
 
 		if is_main {
@@ -442,8 +444,7 @@ pub mod warmkey {
 	}
 	
 	pub fn get_token_balances<'a, 'b, 'c, 'info>(
-		ctx: Context<'a, 'b, 'c, 'info, GetTokenBalances>,
-		allow_zero_amount:bool, 
+		ctx: Context<'a, 'b, 'c, 'info, GetTokenBalances>
 	)-> Result<String> {
 		
 		let mut balance_str: String = "".to_owned();
@@ -458,10 +459,40 @@ pub mod warmkey {
 			if res.is_ok() {
 				let dep_token_data = res.unwrap();
 
-				if allow_zero_amount == false || (allow_zero_amount == true && dep_token_data.amount > 0) {
+				if dep_token_data.amount > 0 {
 					balance_str.push_str(format!("{}", idx).as_str().as_ref());
 					balance_str.push_str("-");
 					balance_str.push_str(format!("{}", dep_token_data.amount).as_str().as_ref());
+					balance_str.push_str(",");
+				}
+			}
+			
+			idx += 1;
+		}
+		
+		Ok(balance_str)
+	}
+	
+	pub fn get_delegated_amounts<'a, 'b, 'c, 'info>(
+		ctx: Context<'a, 'b, 'c, 'info, GetTokenBalances>
+	)-> Result<String> {
+		
+		let mut balance_str: String = "".to_owned();
+		let mut idx:u16 = 0;
+		for dep_token_acc in ctx.remaining_accounts {
+			
+			let _dep_token_data = dep_token_acc.try_borrow_data()?;
+			let mut slice_ref: &[u8] = &_dep_token_data;
+            let res = TokenAccount::try_deserialize(&mut slice_ref);
+			drop(_dep_token_data);
+			
+			if res.is_ok() {
+				let dep_token_data = res.unwrap();
+
+				if dep_token_data.delegated_amount > 0 {
+					balance_str.push_str(format!("{}", idx).as_str().as_ref());
+					balance_str.push_str("-");
+					balance_str.push_str(format!("{}", dep_token_data.delegated_amount).as_str().as_ref());
 					balance_str.push_str(",");
 				}
 			}

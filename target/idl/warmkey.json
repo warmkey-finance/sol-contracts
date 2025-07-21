@@ -139,6 +139,22 @@
       ]
     },
     {
+      "name": "get_delegated_amounts",
+      "discriminator": [
+        13,
+        63,
+        105,
+        106,
+        61,
+        70,
+        157,
+        43
+      ],
+      "accounts": [],
+      "args": [],
+      "returns": "string"
+    },
+    {
       "name": "get_sol_balances",
       "discriminator": [
         211,
@@ -167,12 +183,7 @@
         221
       ],
       "accounts": [],
-      "args": [
-        {
-          "name": "allow_zero_amount",
-          "type": "bool"
-        }
-      ],
+      "args": [],
       "returns": "string"
     },
     {
