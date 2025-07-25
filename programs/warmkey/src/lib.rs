@@ -9,7 +9,7 @@ use solana_security_txt::security_txt;
 declare_id!("warmPv4soGeXuRHdiUj6hiFRhaxFsP2h1B2aF6Gd3KF");
 
 // program
-const VERSION: &str = "2.0.1";
+const VERSION: &str = "2.0.2";
 
 // space allocation
 const ACC_DISCRI_LEN: usize = 8;
@@ -54,6 +54,24 @@ pub mod warmkey {
 		
         Ok(())
     }
+
+	pub fn dep_update_beneficiary(ctx: Context<DepUpdateBeneficiary>, beneficiaries: Vec<Pubkey>) -> Result<()> {
+		
+		require!(WK_SIGNER == ctx.accounts.wk_signer.key(), Error::InvalidWkSigner);
+		
+		let merchant_data = &mut ctx.accounts.merchant_data;
+		let signer = &ctx.accounts.signer;		
+
+		require!(merchant_data.authority.key() == signer.key(), Error::OnlyMerchant);
+		
+		merchant_data.beneficiaries = beneficiaries;
+		
+		emit!(DepUpdateBeneficiaryEvent { 
+			merchant_executor: signer.key(), 
+		});
+		
+		Ok(())
+	}
 	
 	pub fn dep_supply_approval_gas<'a, 'b, 'c, 'info>(
 		ctx: Context<'a, 'b, 'c, 'info, DepSupplyApprovalGas<'info>>,
@@ -556,6 +574,31 @@ pub struct Register<'info> {
     pub system_program: Program<'info, System>,
 }
 
+
+#[derive(Accounts)]
+#[instruction(beneficiaries: Vec<Pubkey>)]
+pub struct DepUpdateBeneficiary<'info> {
+	
+	#[account(
+        mut, 
+        seeds = [b"merchant", signer.key().as_ref()],
+        bump = merchant_data.bump,
+		realloc = ACC_DISCRI_LEN + size_of::<MerchantData>() + (beneficiaries.len() * ADDRESS_LEN),
+        realloc::payer = signer,
+        realloc::zero = true,
+    )]
+
+    pub merchant_data: Account<'info, MerchantData>,
+	
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+	pub wk_signer: Signer<'info>,
+	
+    pub system_program: Program<'info, System>,
+}
+
+
 #[derive(Accounts)]
 pub struct DepFundout<'info> {
 	
@@ -868,6 +911,11 @@ pub struct RegisterEvent {
 pub struct WdEnableEvent {
 	pub merchant_executor: Pubkey,
 	pub wd_executor:Pubkey,
+}
+
+#[event]
+pub struct DepUpdateBeneficiaryEvent {
+	pub merchant_executor: Pubkey,
 }
 
 #[event]

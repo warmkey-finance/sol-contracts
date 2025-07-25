@@ -59,6 +59,9 @@ describe("----- WARMKEY CORE -----", async () => {
 	let merchantWallet: anchor.web3.Keypair = anchor.web3.Keypair.generate();
 	let merchantTokenAccount;
 	let merchantData: PublicKey;
+
+	var beneficiariesWallet = [(anchor.web3.Keypair.generate()).publicKey, (anchor.web3.Keypair.generate()).publicKey, (anchor.web3.Keypair.generate()).publicKey];
+	var beneficiariesTokenAccount = [];
 	
 	let bump: number;
 	
@@ -113,6 +116,24 @@ describe("----- WARMKEY CORE -----", async () => {
 		
 		const block = await provider.connection.getLatestBlockhash();
 		console.log("blockhash:", block.blockhash, "height:", block.lastValidBlockHeight);
+
+		//create beneficiary token acc
+		for(var i=0; i< beneficiariesWallet.length; i++) {
+			let beneficiaryWallet = beneficiariesWallet[i];
+
+			let wkBeneficiaryTokenAcc = await getOrCreateAssociatedTokenAccount(
+				provider.connection,	
+				provider.wallet.payer,   // payer
+				mint,                    // the token mint
+				beneficiaryWallet, // token owner
+				false,
+				null, 
+				null,
+				thisTokenProgramId
+			);
+
+			beneficiariesTokenAccount.push(wkBeneficiaryTokenAcc);
+		}
 		
 		//create wk beneficiary token acc
 		wkBeneficiaryTokenAcc = await getOrCreateAssociatedTokenAccount(
@@ -243,8 +264,61 @@ describe("----- WARMKEY CORE -----", async () => {
 			//console.log(event);
 		}
 		
-		let merchantDataAcc = await program.account.merchantData.fetch(merchantData);
+		var merchantDataAcc = await program.account.merchantData.fetch(merchantData);
 		expect(merchantDataAcc.authority.toBase58()).to.equal(merchantWallet.publicKey.toBase58());
+
+		console.log("-- registred beneficiaries:", merchantDataAcc.beneficiaries);
+		
+
+		var tx = await program.methods
+			.depUpdateBeneficiary( beneficiariesWallet )
+			.accounts({
+				merchantData: merchantData,
+				signer: merchantWallet.publicKey,
+				wkSigner: wkSigner.publicKey,
+				systemProgram: SystemProgram.programId,
+			})
+			.transaction();
+			
+		var updateBeneficiaryTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet, wkSigner], { commitment: "confirmed" });
+		console.log('after update beneficiary tx:', updateBeneficiaryTx);
+
+		merchantDataAcc = await program.account.merchantData.fetch(merchantData);
+		console.log("-- beneficiaries:", merchantDataAcc.beneficiaries);
+
+		var tx = await program.methods
+			.depUpdateBeneficiary( [merchantWallet.publicKey] )
+			.accounts({
+				merchantData: merchantData,
+				signer: merchantWallet.publicKey,
+				wkSigner: wkSigner.publicKey,
+				systemProgram: SystemProgram.programId,
+			})
+			.transaction();
+			
+		updateBeneficiaryTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet, wkSigner], { commitment: "confirmed" });
+		console.log('revert update beneficiary tx:', updateBeneficiaryTx);
+
+		merchantDataAcc = await program.account.merchantData.fetch(merchantData);
+		console.log("-- beneficiaries:", merchantDataAcc.beneficiaries);
+
+		var tx = await program.methods
+			.depUpdateBeneficiary( beneficiariesWallet )
+			.accounts({
+				merchantData: merchantData,
+				signer: merchantWallet.publicKey,
+				wkSigner: wkSigner.publicKey,
+				systemProgram: SystemProgram.programId,
+			})
+			.transaction();
+			
+		var updateBeneficiaryTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet, wkSigner], { commitment: "confirmed" });
+		console.log('undo revert beneficiary tx:', updateBeneficiaryTx);
+
+		merchantDataAcc = await program.account.merchantData.fetch(merchantData);
+		console.log("-- beneficiaries:", merchantDataAcc.beneficiaries);
+
+
 		
 	});
 	
@@ -386,15 +460,17 @@ describe("----- WARMKEY CORE -----", async () => {
 
 		//1 deposit account = 45354 CU, 2 deposit account = 61764
 		//1 deposit account = 23968 CU, 2 deposit account = 39094
-		await sleep(5000);
+
+		let beneficiaryTokenIndex = 0;
+		//await sleep(5000);
 		var tx = await program.methods
-			.depFundout( 0/*merchant beneficiary index*/ )
+			.depFundout( beneficiaryTokenIndex/*merchant beneficiary index*/ )
 			.remainingAccounts(accountMetas)
 			.accounts({
 				merchantData: merchantData,
 				signer: merchantWallet.publicKey,
 				referral: refTokenAccount.address,
-				beneficiaryAcc: merchantTokenAccount.address,
+				beneficiaryAcc: beneficiariesTokenAccount[beneficiaryTokenIndex].address,
 				wkBeneficiary: wkBeneficiaryTokenAcc.address,
 				tokenProgram: thisTokenProgramId, 
 				systemProgram: SystemProgram.programId,

@@ -139,6 +139,67 @@
       ]
     },
     {
+      "name": "dep_update_beneficiary",
+      "discriminator": [
+        86,
+        14,
+        54,
+        105,
+        45,
+        159,
+        121,
+        32
+      ],
+      "accounts": [
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "wk_signer",
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "beneficiaries",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
       "name": "get_delegated_amounts",
       "discriminator": [
         13,
@@ -879,6 +940,19 @@
       ]
     },
     {
+      "name": "DepUpdateBeneficiaryEvent",
+      "discriminator": [
+        111,
+        173,
+        28,
+        89,
+        21,
+        21,
+        145,
+        58
+      ]
+    },
+    {
       "name": "RegisterEvent",
       "discriminator": [
         11,
@@ -1066,6 +1140,18 @@
           {
             "name": "supply_gas",
             "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DepUpdateBeneficiaryEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant_executor",
+            "type": "pubkey"
           }
         ]
       }
