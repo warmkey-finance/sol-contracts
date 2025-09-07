@@ -111,6 +111,76 @@ pub mod warmkey {
 		Ok(())
 	}
 
+	pub fn dep_fundout_sol<'a, 'b, 'c, 'info>(
+		ctx: Context<'a, 'b, 'c, 'info, DepFundoutSol<'info>>, 
+		beneficiary_idx:u8
+	) -> Result<()> {
+		
+		let system_program = &ctx.accounts.system_program;
+		let merchant_data = &ctx.accounts.merchant_data;
+		let beneficiary_acc = &ctx.accounts.beneficiary_acc;
+		let referral = &ctx.accounts.referral;
+		let wk_beneficiary = &ctx.accounts.wk_beneficiary;
+		require!(merchant_data.beneficiaries.len() as u8 > beneficiary_idx, Error::InvalidBeneficiary);
+		require!(ctx.remaining_accounts.len() > 0, Error::NoDepositAccount);
+		require!(merchant_data.beneficiaries[beneficiary_idx as usize].key() == beneficiary_acc.key(), Error::InvalidBeneficiary);
+		require!(merchant_data.referral.key() == referral.key(), Error::InvalidReferral);
+		
+		let signer = &ctx.accounts.signer;
+		let authority = merchant_data.authority.key();
+		require!(authority == signer.key(), Error::OnlyMerchant);
+
+		let mut amounts:u64 = 0;
+		for dep_acc in ctx.remaining_accounts {
+			let balance = dep_acc.to_account_info().lamports();
+			
+			//park at merchant data acc first only split
+			let cpi_accounts = system_program::Transfer {
+				from: dep_acc.to_account_info(),
+				to: merchant_data.to_account_info(),
+			};
+			let cpi_program = system_program.to_account_info();
+			let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
+			system_program::transfer(cpi_context, balance)?;
+			
+			amounts += balance;
+		}
+		
+		if amounts > 0 {
+
+			merchant_data.sub_lamports(amounts)?;
+
+			let mut to_wk_amt = (amounts * FEES) / 10000;
+			let mut to_ref_amt = 0;
+
+			if referral.key() != wk_beneficiary.key() {
+				to_ref_amt = (to_wk_amt * SHARE_REVENUE) / 10000;
+				
+				let res = referral.add_lamports(to_ref_amt);
+				if res.is_ok() {
+					to_wk_amt -= to_ref_amt; 
+				} else {
+					to_ref_amt = 0; //nothing happen
+				}
+			}
+
+			let to_merchant_amt = amounts - to_wk_amt - to_ref_amt;
+
+			wk_beneficiary.add_lamports(to_wk_amt)?;
+			beneficiary_acc.add_lamports(to_merchant_amt)?;
+
+		}
+		
+		emit!(DepFundoutEvent { 
+			merchant_executor: authority, 
+			mint: pubkey!("1nc1nerator11111111111111111111111111111111"),
+			fundout: amounts as u128,
+		});
+		
+		
+		Ok(())
+	}
+
 	pub fn dep_fundout<'a, 'b, 'c, 'info>(
 		ctx: Context<'a, 'b, 'c, 'info, DepFundout<'info>>, 
 		beneficiary_idx:u8
@@ -219,8 +289,6 @@ pub mod warmkey {
 			token_interface::transfer(cpi_ctx, to_merchant_amt)?;
 		}
 		
-		//===== emit =====
-		
 		emit!(DepFundoutEvent { 
 			merchant_executor: authority, 
 			mint: mint.key(),
@@ -285,7 +353,7 @@ pub mod warmkey {
 		let merchant_data = &ctx.accounts.merchant_data;
 		let signer = &ctx.accounts.signer;
 		require!(merchant_data.authority.key() == signer.key(), Error::OnlyMerchant);
-		
+
 		let wd_token = &ctx.accounts.wd_token;
 		let token_program = &ctx.accounts.token_program;
 		let merchant_token = &ctx.accounts.merchant_token;
@@ -574,7 +642,6 @@ pub struct Register<'info> {
     pub system_program: Program<'info, System>,
 }
 
-
 #[derive(Accounts)]
 #[instruction(beneficiaries: Vec<Pubkey>)]
 pub struct DepUpdateBeneficiary<'info> {
@@ -596,6 +663,35 @@ pub struct DepUpdateBeneficiary<'info> {
 	pub wk_signer: Signer<'info>,
 	
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct DepFundoutSol<'info> {
+	
+	#[account(
+        mut,
+        seeds = [b"merchant", signer.key().as_ref()],
+        bump = merchant_data.bump,
+    )]
+	pub merchant_data: Account<'info, MerchantData>,
+	
+	#[account(mut)]
+    pub signer: Signer<'info>,
+
+	#[account(mut)] 
+	///CHECK
+	pub beneficiary_acc: UncheckedAccount<'info>,
+	
+	#[account(mut)]
+	///CHECK
+	pub referral: UncheckedAccount<'info>,
+	
+	#[account(mut)]
+	///CHECK
+	pub wk_beneficiary: UncheckedAccount<'info>,
+	 
+	pub system_program: Program<'info, System>,
+	
 }
 
 
@@ -861,10 +957,6 @@ pub struct CreateTokenAcc<'info> { // misc
 
 
 //===== account =====
-#[account]
-pub struct NoData {
-	
-}
 
 #[account]
 pub struct WdAgent { // authority to do payout
@@ -990,5 +1082,7 @@ pub enum Error {
 	#[msg("cannot more than last wd id")]
 	MainWdIdMustLowerThanLastWdId,
 	#[msg("invalid on-curve pubkey")]
-	InvalidOnCurvePubkey
+	InvalidOnCurvePubkey,
+	#[msg("invalid referral")]
+	InvalidReferral
 }

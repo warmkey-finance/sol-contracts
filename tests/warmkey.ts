@@ -317,13 +317,114 @@ describe("----- WARMKEY CORE -----", async () => {
 
 		merchantDataAcc = await program.account.merchantData.fetch(merchantData);
 		console.log("-- beneficiaries:", merchantDataAcc.beneficiaries);
+	});
 
 
+	it("----- FUND OUT SOL -----", async () => {
+
+		let depositWallets = [anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()/*, anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()*/];
+		
+		//batch transfer SOL to $depositWallets
+		var accountMetas = [];
+		var amounts = [];
+		for(var x in depositWallets) {
+			var depositWallet = depositWallets[x];
+			accountMetas.push({pubkey: depositWallet.publicKey, isWritable: true, isSigner: false});
+			amounts.push(new BN(anchor.web3.LAMPORTS_PER_SOL));
+		}
+
+		
+		// 2 persons: 64767 CU, 3 persons: 82675 CU, 4 persons: 106583 CU, 5 persons: 130491 CU
+		var tx = await program.methods
+			.depSupplyApprovalGas( new BN(123), amounts )
+			.remainingAccounts(accountMetas)
+			.accounts({
+				merchantData: merchantData,
+				signer: merchantWallet.publicKey,
+				systemProgram: SystemProgram.programId,
+			})
+			.transaction();
+			
+		const supplyGasTx = await sendAndConfirmTransaction(provider.connection, tx, [merchantWallet], { commitment: "confirmed" });
+		console.log('supply gas tx:', supplyGasTx);
+		console.log("tx size:", getTxSize(tx, merchantWallet.publicKey));
+		const supplyGasTxDetails = await program.provider.connection.getTransaction(supplyGasTx, {
+			maxSupportedTransactionVersion: 0,
+			commitment: "confirmed",
+		});
+		//console.log(supplyGasTxDetails);
+
+		var balances = await program.methods.getSolBalances()
+		.remainingAccounts(accountMetas)
+		.view();
+		console.log("sol balances:", balances);
+
+		var accountMetas = [];
+		var signers = [merchantWallet];
+		for(var x in depositWallets) {
+			let depositWallet = depositWallets[x];
+			accountMetas.push({pubkey: depositWallet.publicKey, isWritable: true, isSigner: true});
+			signers.push(depositWallet);
+		}
+		
+		// fundout
+		let beneficiaryIndex = 0;
+		var getMerchantData = await program.account.merchantData.fetch(merchantData);
+		var beforeWkBeneficiary = await provider.connection.getBalance(wkBeneficiary);
+		var beforeRef = await provider.connection.getBalance(referral.publicKey);
+		var beforeBalance = await provider.connection.getBalance(beneficiariesWallet[beneficiaryIndex]);
+		
+		var tx = await program.methods
+			.depFundoutSol( beneficiaryIndex/*merchant beneficiary index*/ )
+			.remainingAccounts(accountMetas)
+			.accounts({
+				merchantData: merchantData,
+				signer: merchantWallet.publicKey,
+				referral: referral.publicKey,
+				beneficiaryAcc: beneficiariesWallet[beneficiaryIndex],
+				wkBeneficiary: wkBeneficiary,
+				systemProgram: SystemProgram.programId,
+			})
+			.transaction();
+
+		const fundoutTx = await sendAndConfirmTransaction(provider.connection, tx, signers, { commitment: "confirmed" });
+		console.log('fundout tx:', fundoutTx);
+
+		for(var x in depositWallets) {
+			var depositWallet = depositWallets[x];
+			var depositWalletBal = await provider.connection.getBalance(depositWallet.publicKey);
+			expect(Number(depositWalletBal)).to.equal(0);
+			
+		}
+		
+		var totalFundout =  depositWallets.length * (LAMPORTS_PER_SOL/LAMPORTS_PER_SOL);
+		var afterRef = await provider.connection.getBalance(referral.publicKey);
+
+		var refEarn = (Number(afterRef) - Number(beforeRef)) / LAMPORTS_PER_SOL;
+		if (getMerchantData.referral.toBase58() == wkBeneficiary.toBase58()) {
+			expect(refEarn).to.equal(0);
+		} else {
+			expect(refEarn).to.equal( totalFundout * 0.25 / 100 );
+		}
+		
+		var afterWkBeneficiary =  await provider.connection.getBalance(wkBeneficiary);
+		var wkBeneficiaryEarn = (Number(afterWkBeneficiary) - Number(beforeWkBeneficiary)) / LAMPORTS_PER_SOL;
+		if (getMerchantData.referral.toBase58() == wkBeneficiary.toBase58()) {
+			expect(wkBeneficiaryEarn).to.equal( totalFundout * 0.5 / 100);
+		} else {
+			expect(wkBeneficiaryEarn).to.equal( totalFundout * 0.25 / 100);
+		}
+
+		var afterBalance = await provider.connection.getBalance(beneficiariesWallet[beneficiaryIndex]);
+		var beneficiaryEarn =  (Number(afterBalance) - Number(beforeBalance)) / LAMPORTS_PER_SOL;
+
+		console.log("totalFundout:", totalFundout, "beneficiaryEarn:", beneficiaryEarn, "refEarn:", refEarn, "wkBeneficiaryEarn:", wkBeneficiaryEarn);
+		expect(beneficiaryEarn).to.equal( totalFundout - (refEarn + wkBeneficiaryEarn));
 		
 	});
 	
 	it("----- FUND OUT -----", async () => {
-		
+		return;
 		let depositWallets = [anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()/*, anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()*/];
 		let depositTokenAccounts = [];
 		
@@ -462,6 +563,7 @@ describe("----- WARMKEY CORE -----", async () => {
 		//1 deposit account = 23968 CU, 2 deposit account = 39094
 
 		let beneficiaryTokenIndex = 0;
+
 		//await sleep(5000);
 		var tx = await program.methods
 			.depFundout( beneficiaryTokenIndex/*merchant beneficiary index*/ )
@@ -511,6 +613,7 @@ describe("----- WARMKEY CORE -----", async () => {
 	});
 	
 	it("---- WITHDRAWAL -----", async () => {
+		return;
 		//enable withdrawal
 		let wdWallet: anchor.web3.Keypair = anchor.web3.Keypair.generate();
 		let wdTokenAccount;

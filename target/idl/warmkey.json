@@ -78,6 +78,82 @@
       ]
     },
     {
+      "name": "dep_fundout_sol",
+      "discriminator": [
+        48,
+        193,
+        205,
+        188,
+        54,
+        237,
+        218,
+        16
+      ],
+      "accounts": [
+        {
+          "name": "merchant_data",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  114,
+                  99,
+                  104,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "beneficiary_acc",
+          "docs": [
+            "CHECK"
+          ],
+          "writable": true
+        },
+        {
+          "name": "referral",
+          "docs": [
+            "CHECK"
+          ],
+          "writable": true
+        },
+        {
+          "name": "wk_beneficiary",
+          "docs": [
+            "CHECK"
+          ],
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "beneficiary_idx",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "dep_supply_approval_gas",
       "discriminator": [
         228,
@@ -1101,6 +1177,11 @@
       "code": 6013,
       "name": "InvalidOnCurvePubkey",
       "msg": "invalid on-curve pubkey"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidReferral",
+      "msg": "invalid referral"
     }
   ],
   "types": [
