@@ -16,6 +16,7 @@ const ACC_DISCRI_LEN: usize = 8;
 const ADDRESS_LEN: usize = 32;
 
 // settings
+const MAX_BENEFICIARIES: usize = 20;
 const FEES: u64 =  50; // 0.5%, /10000 to get multiply
 const SHARE_REVENUE: u64 = 5000; //50%
 const OWNER:Pubkey = pubkey!("EjC3ciptXau6mYyS1RcsyJpDshREhVKPdVAmawLLNsZU");
@@ -57,6 +58,7 @@ pub mod warmkey {
 
 	pub fn dep_update_beneficiary(ctx: Context<DepUpdateBeneficiary>, beneficiaries: Vec<Pubkey>) -> Result<()> {
 		
+		require!(beneficiaries.len() <= MAX_BENEFICIARIES,Error::InvalidBeneficiary);
 		require!(WK_SIGNER == ctx.accounts.wk_signer.key(), Error::InvalidWkSigner);
 		
 		let merchant_data = &mut ctx.accounts.merchant_data;
@@ -150,11 +152,18 @@ pub mod warmkey {
 
 			merchant_data.sub_lamports(amounts)?;
 
-			let mut to_wk_amt = (amounts * FEES) / 10000;
+			let mut this_fees = FEES;
+			let mut this_share_revenue = SHARE_REVENUE;
+			if merchant_data.fees >0  || merchant_data.share_revenue > 0 {
+				this_fees = merchant_data.fees;
+				this_share_revenue = merchant_data.share_revenue;
+			}
+
+			let mut to_wk_amt = (amounts * this_fees) / 10000;
 			let mut to_ref_amt = 0;
 
 			if referral.key() != wk_beneficiary.key() {
-				to_ref_amt = (to_wk_amt * SHARE_REVENUE) / 10000;
+				to_ref_amt = (to_wk_amt * this_share_revenue) / 10000;
 				
 				let res = referral.add_lamports(to_ref_amt);
 				if res.is_ok() {
@@ -207,6 +216,13 @@ pub mod warmkey {
 		let mut has_valid_ref = referral.key() != wk_beneficiary.key(); //token acc
 		let mut mint:Pubkey = pubkey!("1nc1nerator11111111111111111111111111111111");
 
+		let mut this_fees = FEES;
+		let mut this_share_revenue = SHARE_REVENUE;
+		if merchant_data.fees >0  || merchant_data.share_revenue > 0 {
+			this_fees = merchant_data.fees;
+			this_share_revenue = merchant_data.share_revenue;
+		}
+
 		for dep_token_acc in ctx.remaining_accounts {
 			
 			let mut cpi_accounts;
@@ -240,12 +256,12 @@ pub mod warmkey {
 			}
 			
 			let amount = dep_token_data.amount;
-			let mut to_wk_amt = (amount * FEES) / 10000;
+			let mut to_wk_amt = (amount * this_fees) / 10000;
 			let mut to_ref_amt = 0;
 			amounts += amount as u128;
 			
 			if has_valid_ref {
-				to_ref_amt = (to_wk_amt * SHARE_REVENUE) / 10000;
+				to_ref_amt = (to_wk_amt * this_share_revenue) / 10000;
 				
 				if to_ref_amt > 0 {
 					// transfer to ref
@@ -624,7 +640,6 @@ pub mod warmkey {
 //===== derive accounts =====
 
 #[derive(Accounts)]
-#[instruction(referral: Pubkey, beneficiaries: Vec<Pubkey>)]
 pub struct Register<'info> {
 	
 	#[account(
@@ -632,7 +647,7 @@ pub struct Register<'info> {
         seeds = [b"merchant", signer.key().as_ref()],
         bump,
 		payer = signer,
-		space = ACC_DISCRI_LEN + size_of::<MerchantData>() + (beneficiaries.len() * ADDRESS_LEN),
+		space = ACC_DISCRI_LEN + size_of::<MerchantData>() + (MAX_BENEFICIARIES * ADDRESS_LEN),
     )]
     pub merchant_data: Account<'info, MerchantData>,
 	
@@ -643,14 +658,13 @@ pub struct Register<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(beneficiaries: Vec<Pubkey>)]
 pub struct DepUpdateBeneficiary<'info> {
 	
 	#[account(
         mut, 
         seeds = [b"merchant", signer.key().as_ref()],
         bump = merchant_data.bump,
-		realloc = ACC_DISCRI_LEN + size_of::<MerchantData>() + (beneficiaries.len() * ADDRESS_LEN),
+		realloc = ACC_DISCRI_LEN + size_of::<MerchantData>() + (MAX_BENEFICIARIES * ADDRESS_LEN),
         realloc::payer = signer,
         realloc::zero = true,
     )]
@@ -981,6 +995,8 @@ pub struct MerchantData {
 	pub referral: Pubkey,
 	pub wd_executor: Pubkey,
 	pub beneficiaries: Vec<Pubkey>,
+	pub fees:u64,
+	pub share_revenue:u64,
 }
 
 #[account]

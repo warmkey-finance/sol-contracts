@@ -1263,6 +1263,14 @@
             "type": {
               "vec": "pubkey"
             }
+          },
+          {
+            "name": "fees",
+            "type": "u64"
+          },
+          {
+            "name": "share_revenue",
+            "type": "u64"
           }
         ]
       }

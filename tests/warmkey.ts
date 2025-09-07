@@ -424,7 +424,7 @@ describe("----- WARMKEY CORE -----", async () => {
 	});
 	
 	it("----- FUND OUT -----", async () => {
-		return;
+	
 		let depositWallets = [anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()/*, anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate(), anchor.web3.Keypair.generate()*/];
 		let depositTokenAccounts = [];
 		
@@ -613,7 +613,7 @@ describe("----- WARMKEY CORE -----", async () => {
 	});
 	
 	it("---- WITHDRAWAL -----", async () => {
-		return;
+		
 		//enable withdrawal
 		let wdWallet: anchor.web3.Keypair = anchor.web3.Keypair.generate();
 		let wdTokenAccount;
